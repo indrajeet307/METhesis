@@ -3,44 +3,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-struct word{
-    char word[32];
-    int id;
-    struct word *next;
-};
-struct masterwordlist
-{
-    struct word *list;
-    int count;
-};
-typedef struct masterwordlist s_masterwordlist;
-struct wordidlist{
-    int id;
-    struct wordidlist *next;
-};
-
-struct class
-{
-    char name[32];
-    int id;
-    int count;
-    struct wordidlist *list;
-};
-typedef struct class s_class;
-
-struct garbage{
-    void *ptr;
-    struct garbage *next;
-};
-typedef struct garbage s_garbage;
-
-void init(s_class *cls, s_masterwordlist *mwl, s_garbage *grb)
-{
-    cls = NULL;
-    mwl = NULL;
-    grb = NULL;
-}
-int readFromFile(char *fname, s_class *p_class, s_masterwordlist *p_wordlist, s_garbage *p_garbage)
+#include "helper.h"
+#include "trie.h"
+#include <assert.h>
+int readFromFile(char *fname, s_docs **docptr, s_trie **classptr, s_trie **wordptr)
 {
     FILE *fp;
     int err;
@@ -52,25 +18,38 @@ int readFromFile(char *fname, s_class *p_class, s_masterwordlist *p_wordlist, s_
         printf("[ Error ] %s.\n",strerror(err));
         return err;
     } 
-    char buff[1024];
-    size_t count=1024;
+    char *buff=NULL;
+    size_t count=0;
     size_t readlen;
+    int numWords=0;
     while( !feof(fp))
     {
-        readlen = read(fileno(fp), buff, count);
-        if( readlen == 0) break;
-        printf("[ buff ] %d \n", (int)readlen);
-        if( readlen == count )
+        readlen = getline( &buff, &count, fp);
+        if( readlen == -1) break;
+        char *class = strtok(buff,"\t");
+        int cid = findWord(classptr, class, strlen(class));
+        if( cid < 0)
+            cid = addWord(classptr, class, strlen(class));
+        s_doc *temp = addDocTolist(docptr,  cid);
+
+        char *word;
+        while( (word = strtok(NULL," \n\r")) != NULL)
         {
-        char *p = buff+(readlen-1);
-        while( *p != ' ')
-            p--;
-            *p = '\0';
+            numWords++;
+            int wid = findWord(wordptr, word, strlen(word));
+            if( wid < 0)
+                wid = addWord(wordptr, word, strlen(word));
+            addWordDoc(&temp,docptr,wid);
         }
-        //printf(" %s", buff);
     }
+    printf("Number of words %d\n",numWords);
     fclose(fp);
     return 0;
+}
+int* createMatrix( int columns, int rows)
+{
+    int *temp = (int*) calloc( sizeof(int), columns*rows);
+    return temp;
 }
 int main(int argc, char **argv)
 {
@@ -80,12 +59,51 @@ int main(int argc, char **argv)
         return 1;
     }
     char * fname = argv[1];
-    s_class *p_class; 
-    s_masterwordlist *p_wordlist;
-    s_garbage *p_garbage;
-    init(p_class, p_wordlist, p_garbage);
-    readFromFile(fname, p_class, p_wordlist, p_garbage);
+    s_trie *classlist;
+    s_trie *wordlist;
+    s_docs *doclist;
 
+    classlist = initTrie();
+    wordlist = initTrie();
+    doclist = initDL();
+
+    readFromFile(fname, &doclist, &classlist, &wordlist);
+    showWords(classlist);
+    //printf(" %d classes\n", );
+    //printf(" %d words\n", );
+    int numdocs = getNumDocs(doclist);
+    printf(" %d Docs\n", numdocs);
+    printf(" %d total unique words\n", getNumwords(wordlist));
+    int numwords = getNumwords(wordlist)+1;
+
+    int i=0;
+    int count=0;
+    int * mat = createMatrix( numwords, numdocs);
+    assert( mat != NULL );
+        s_doc *docptr = doclist->list;
+    for ( i=0; i<numdocs; i++)
+    {
+        count+=filldata( mat+(i*numwords), docptr);
+         mat[(i*numwords)+numwords-1]=docptr->classid;
+        docptr = docptr->next;
+    }
+    printf(" %d total words\n", count);
+    
+    //int j;
+    //for( i=0;i<numdocs;i++)
+    //{
+    //    for ( j=0;j<numwords;j++)
+    //    {
+    //        printf(" %d",mat[(i*numwords)+j]);
+
+    //    }
+    //    printf("\n");
+    //}
+    
+    //showWords(wordlist);
+    //clean(&wordlist);
+    //clean(&classlist);
+    //cleanUP(&doclist);
     return 0;
 }
 
