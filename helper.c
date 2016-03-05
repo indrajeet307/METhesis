@@ -152,16 +152,26 @@ int getNumDocs(s_docs *dlist)
     return dlist->numdocs;
 }
 
-int filldata( int *row, s_doc *ptr)
+int filldata(s_docs *docs, int*mat, int rows, int columns)
 {
-    int i,freq=0;
-    int numwords = ptr->wcount;
-    s_wordnode *wptr = ptr->wlist;
-    for ( i=0;i<numwords;i++)
+    int i,j;
+    int count=0;
+    int numdocs = docs->numdocs;
+    s_doc * pdoc;
+    pdoc = docs->list;
+    for ( i=0; i<numdocs; i++)
     {
-        row[wptr->id] = wptr->freq;
-        freq += wptr->freq;
-        wptr = wptr->next;
+        s_wordnode *pwordnode = pdoc->wlist;
+        while( pwordnode!=NULL)
+        {
+#define INDEX(i,j) ( (i*columns)+j )
+                mat[ INDEX(i,pwordnode->id) ] = pwordnode->freq;
+                count += pwordnode->freq;
+                pwordnode=pwordnode->next;
+            }
+        mat[ INDEX(i,columns-1) ] = pdoc->classid;
+#undef INDEX
+            pdoc = pdoc->next;
     }
-    return freq;
+    return count;
 }

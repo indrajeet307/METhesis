@@ -1,11 +1,12 @@
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include "helper.h"
+#include "naiveOperations.h"
 #include "trie.h"
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 int readFromFile(char *fname, s_docs **docptr, s_trie **classptr, s_trie **wordptr)
 {
     FILE *fp;
@@ -51,6 +52,11 @@ int* createMatrix( int columns, int rows)
     int *temp = (int*) calloc( sizeof(int), columns*rows);
     return temp;
 }
+float* createFloatMatrix( int columns, int rows)
+{
+    float *temp = (float*) calloc( sizeof(float), columns*rows);
+    return temp;
+}
 int main(int argc, char **argv)
 {
     if( argc < 2)
@@ -68,42 +74,22 @@ int main(int argc, char **argv)
     doclist = initDL();
 
     readFromFile(fname, &doclist, &classlist, &wordlist);
-    showWords(classlist);
-    //printf(" %d classes\n", );
-    //printf(" %d words\n", );
     int numdocs = getNumDocs(doclist);
-    printf(" %d Docs\n", numdocs);
-    printf(" %d total unique words\n", getNumwords(wordlist));
-    int numwords = getNumwords(wordlist)+1;
+    int numclasses = getNumwords(classlist);
+    printf(" Read %d Docs\n", numdocs);
+    printf(" Containing %d total unique words\n", getNumwords(wordlist));
+    int numwords = getNumwords(wordlist);
 
     int i=0;
     int count=0;
-    int * mat = createMatrix( numwords, numdocs);
+    int * mat = createMatrix( numwords+1, numdocs); // extra column for the classID
     assert( mat != NULL );
         s_doc *docptr = doclist->list;
-    for ( i=0; i<numdocs; i++)
-    {
-        count+=filldata( mat+(i*numwords), docptr);
-         mat[(i*numwords)+numwords-1]=docptr->classid;
-        docptr = docptr->next;
-    }
-    printf(" %d total words\n", count);
-    
-    //int j;
-    //for( i=0;i<numdocs;i++)
-    //{
-    //    for ( j=0;j<numwords;j++)
-    //    {
-    //        printf(" %d",mat[(i*numwords)+j]);
 
-    //    }
-    //    printf("\n");
-    //}
+    count = filldata(doclist, mat, numdocs, numwords+1);
+    float * probmat=createFloatMatrix( numwords, numclasses);
+    createProbablityMatrix( mat, probmat, numdocs, numwords+1, numclasses, numwords);
     
-    //showWords(wordlist);
-    //clean(&wordlist);
-    //clean(&classlist);
-    //cleanUP(&doclist);
     return 0;
 }
 
