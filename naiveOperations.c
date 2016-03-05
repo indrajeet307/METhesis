@@ -1,4 +1,6 @@
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <limits.h>
 /*
  *	@DESC   : Normalizes the given matrix along the row
@@ -63,22 +65,33 @@ int createClassWiseData( int *mat, int *outmat, int inrows, int incolumns, int o
  */
 int createProbablityMatrix( int *inmat, float *outmat, int inrows, int incolumns, int outrows, int outcolumns)
 {
+#define  INDEX(i,j,cols) ((i*cols)+j)
     int i,j;
     int sum;
     int class;
     for ( i=0; i<inrows; i++)
     {
         sum =0;
-#define  INDEX(i,j,cols) ((i*cols)+j)
         for ( j=0; j<incolumns-1; j++)
             sum += inmat[ INDEX(i,j,incolumns) ];
-        class = inmat[ INDEX(i,j,incolumns) ];
-        for ( j=0; j<outcolumns; j++)
-            outmat[ INDEX(class,j,outcolumns) ] += (float)inmat[ INDEX(i,j,incolumns) ]/(float)sum;
-#undef index
+        class = inmat[ INDEX(i,j,incolumns) ]; // the last column in the matrix
+        for ( j=0; j<outcolumns-1; j++)
+            outmat[ INDEX(class,j,outcolumns) ] +=  ( (float)inmat[ INDEX(i,j,incolumns) ]/(float)sum );
+        outmat[ INDEX(class,j,outcolumns) ] += 1;
     }
+    // Update the probablity for each class
+    for ( i=0; i<outrows; i++)
+    {
+        outmat[ INDEX(i,outcolumns-1,outcolumns) ] /= inrows;
+    }
+#undef index
 }
-
+/*
+ *	@DESC   : Print the Integer Matrix
+ *	@PRAM   : matrix ptr, num of rows, num of columns
+ *	@RETURN :  
+ *	
+ */
 void print( float *mat, int rows, int columns)
 {
     int i,j;
@@ -91,6 +104,13 @@ void print( float *mat, int rows, int columns)
         printf("\n");
     }
 }
+
+/*
+ *	@DESC   : Print the float matrix
+ *	@PRAM   : matrix ptr, num of rows, num of columns
+ *	@RETURN : 
+ *	
+ */
 void printIntMatrix( int *mat, int rows, int columns)
 {
     int i,j;
@@ -102,4 +122,42 @@ void printIntMatrix( int *mat, int rows, int columns)
         }
         printf("\n");
     }
+}
+
+/*
+ *	@DESC   : Assgins classes to the the test matrix
+ *	@PRAM   : matrix ptr, probablity matrix, predict vector, num of rows in testing
+ *           : matrix, num of rows in probablity matrix, num of columns in both the matrices
+ *	@RETURN :
+ *	
+ */
+void assignClass( int *mat, float *prob, int *pridict, int rows, int classes, int columns)
+{
+#define  INDEX(i,j,cols) ((i*cols)+j)
+    int i,j,k;
+    double *classprob =  (double*) malloc( sizeof(double)* classes);
+        for ( k=0; k<classes; k++)
+            classprob[k] = 1;
+    for ( i=0; i<rows; i++)
+    {
+        for ( j=0; j<columns; j++)
+        {
+            for ( k=0; k<classes; k++)
+            {
+                if ( prob [ INDEX(k,j,columns) ] > 0 ) 
+                    classprob[ k ] += prob [ INDEX(k,j,columns) ];
+                //printf(" %lf", prob [ INDEX(k,j,columns) ] );
+            }
+        }
+        int maxClass=0;
+        for ( k=0; k<classes; k++)
+        {
+            printf(" %lf", classprob[k] );
+            if( classprob[ maxClass ] < classprob[k] )
+                maxClass = k;
+        }
+        pridict[i] = maxClass;
+    }
+    free(classprob);
+#undef INDEX
 }
