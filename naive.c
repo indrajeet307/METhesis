@@ -98,6 +98,11 @@ int* createMatrix( int columns, int rows)
     int *temp = (int*) calloc( sizeof(int), columns*rows);
     return temp;
 }
+int *createVector(int columns)
+{
+    int *temp = (int*) calloc( sizeof(int), columns);
+    return temp;
+    }
 float* createFloatMatrix( int columns, int rows)
 {
     float *temp = (float*) calloc( sizeof(float), columns*rows);
@@ -128,27 +133,39 @@ int main(int argc, char **argv)
 
     int i=0;
     int count=0;
-    int * mat = createMatrix( numwords+1, numdocs); // extra column for the classID
+    int * mat = createMatrix( numwords, numdocs); // extra column for the classID
     assert( mat != NULL );
+    int * cvect = createVector( numdocs);    // stores the class info for the doc
+    assert( cvect != NULL );
         s_doc *docptr = doclist->list;
 
-    count = filldata(doclist, mat, numdocs, numwords+1);
-    float * probmat=createFloatMatrix( numwords+1, numclasses); // extra column for probablity of the class
-    createProbablityMatrix( mat, probmat, numdocs, numwords+1, numclasses, numwords+1);
+    count = filldata(doclist, mat, cvect ,numdocs, numwords);
+    //printIntMatrix(mat, numdocs, numwords);
+    float *fmat = createFloatMatrix( numdocs, numwords);
+    normalize(mat ,fmat, numdocs, numwords);
+    //print(fmat, numdocs, numwords);
+    float * cprob = (float*) calloc( sizeof(float) , numclasses);
+    assert( cprob != NULL );
+    float * probmat=createFloatMatrix( numwords, numclasses); // extra column for probablity of the class
+    createProbablityMatrix( mat, probmat, cvect, cprob, numdocs, numwords, numclasses, numwords);
     free(mat);
-    print(probmat, numclasses, numwords+1);
+    print(probmat, numclasses, numwords);
 
     readFromTestFile( testfname, &testdoclist, &classlist, &wordlist);
     numdocs = getNumDocs(testdoclist);
     printf(" Read %d Training Docs\n", numdocs);
     printf(" Containing %d total unique words\n", getNumwords(wordlist));
-    mat = createMatrix( numwords+1, numdocs); 
-    int * pmat = createMatrix( 1, numdocs); // for predicted classID
+    int *smat = createMatrix( numwords, numdocs); 
+    filldata(testdoclist, smat, cvect, numdocs, numwords);
+    int * pmat = createVector( numdocs); // for predicted classID
     
-    assignClass( mat, probmat, pmat, numdocs, numclasses, numwords+1); 
+    assignClass( smat, probmat, cprob, pmat, numdocs, numclasses, numwords); 
     printIntMatrix( pmat, 1, numdocs);
+    printIntMatrix( cvect, 1, numdocs);
+    showWords(classlist);
+    free(cvect);
     free(pmat);
-    free(mat);
+    //free(smat);
     return 0;
 }
 

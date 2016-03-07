@@ -1,3 +1,4 @@
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +12,7 @@
  *   Normalized value(x) = -----------------------
  *                            max - min
  */
-int normalize( int *mat, int rows, int columns)
+int normalize( int *inmat, float *outmat, int rows, int columns)
 {
     int i,j;
     int max, min;
@@ -21,15 +22,15 @@ int normalize( int *mat, int rows, int columns)
         min = INT_MAX;
         for ( j=0;j<columns; j++)
         {
-            if( min > mat[(i*columns)+j] )
-                min = mat[(i*columns)+j] ;
+            if( min > inmat[(i*columns)+j] )
+                min = inmat[(i*columns)+j] ;
 
-            if( max < mat[(i*columns)+j] )
-                max = mat[(i*columns)+j];
+            if( max < inmat[(i*columns)+j] )
+                max = inmat[(i*columns)+j];
         }
         for (  j=0; j<columns; j++)
         {
-            mat[(i*columns)+j] =(mat[(i*columns)+j] - min)/(max-min)   ;
+            outmat[(i*columns)+j] =(float)(inmat[(i*columns)+j] - min)/(float)(max-min)   ;
         }
     }
 }
@@ -59,11 +60,11 @@ int createClassWiseData( int *mat, int *outmat, int inrows, int incolumns, int o
 /*
  *	@DESC   : creates a probability matrix from the given matrix
  *	@PRAM   : input matrix, probability matrix, num of rows, num of columns, num of classes
- *           :
+ *          :
  *	@RETURN : the probably matrix is modified
  *	
  */
-int createProbablityMatrix( int *inmat, float *outmat, int inrows, int incolumns, int outrows, int outcolumns)
+int createProbablityMatrix( int *inmat, float *outmat, int *cvect, float *cprob, int inrows, int incolumns, int outrows, int outcolumns)
 {
 #define  INDEX(i,j,cols) ((i*cols)+j)
     int i,j;
@@ -72,20 +73,32 @@ int createProbablityMatrix( int *inmat, float *outmat, int inrows, int incolumns
     for ( i=0; i<inrows; i++)
     {
         sum =0;
-        for ( j=0; j<incolumns-1; j++)
+        for ( j=0; j<incolumns; j++)
             sum += inmat[ INDEX(i,j,incolumns) ];
-        class = inmat[ INDEX(i,j,incolumns) ]; // the last column in the matrix
-        for ( j=0; j<outcolumns-1; j++)
-            outmat[ INDEX(class,j,outcolumns) ] +=  ( (float)inmat[ INDEX(i,j,incolumns) ]/(float)sum );
-        outmat[ INDEX(class,j,outcolumns) ] += 1;
+        class = cvect[ i ];
+        for ( j=0; j<outcolumns; j++)
+            outmat[ INDEX(class,j,outcolumns) ] +=  (( (float)inmat[ INDEX(i,j,incolumns) ]/(float)sum ));
+        cprob[ cvect[ i ] ] += 1;
+        //outmat[ INDEX(class,j,outcolumns) ] += 1;
     }
-    // Update the probablity for each class
     for ( i=0; i<outrows; i++)
     {
-        outmat[ INDEX(i,outcolumns-1,outcolumns) ] /= inrows;
+        for ( j=0; j<outcolumns; j++)
+        {
+            if ( outmat[ INDEX(i,j,outcolumns) ] > 0)
+            { float temp = log10( outmat[ INDEX(i,j,outcolumns) ]);
+            outmat[ INDEX(i,j,outcolumns) ] = temp>=0 ? temp : (-1)*temp;
+            }
+        }
+    }
+    for ( i=0; i<outrows; i++)
+    {
+        cprob[ i ] = abs(log10(cprob[ i ]/ inrows));
+        printf("i %f\t", cprob[i]);
     }
 #undef index
 }
+
 /*
  *	@DESC   : Print the Integer Matrix
  *	@PRAM   : matrix ptr, num of rows, num of columns
@@ -131,7 +144,7 @@ void printIntMatrix( int *mat, int rows, int columns)
  *	@RETURN :
  *	
  */
-void assignClass( int *mat, float *prob, int *pridict, int rows, int classes, int columns)
+void assignClass( int *mat, float *prob, float *cprob, int *pridict, int rows, int classes, int columns)
 {
 #define  INDEX(i,j,cols) ((i*cols)+j)
     int i,j,k;
@@ -144,18 +157,21 @@ void assignClass( int *mat, float *prob, int *pridict, int rows, int classes, in
         {
             for ( k=0; k<classes; k++)
             {
-                if ( prob [ INDEX(k,j,columns) ] > 0 ) 
+                if ( mat [ INDEX(i,j,columns) ] > 0 ) 
                     classprob[ k ] += prob [ INDEX(k,j,columns) ];
                 //printf(" %lf", prob [ INDEX(k,j,columns) ] );
             }
         }
+        for ( k=0; k<classes; k++)
+            classprob[ k ] += cprob[k];
         int maxClass=0;
         for ( k=0; k<classes; k++)
         {
-            printf(" %lf", classprob[k] );
+            printf(" %lf \t", classprob[k] );
             if( classprob[ maxClass ] < classprob[k] )
                 maxClass = k;
         }
+        printf("\n");
         pridict[i] = maxClass;
     }
     free(classprob);

@@ -152,7 +152,7 @@ int getNumDocs(s_docs *dlist)
     return dlist->numdocs;
 }
 
-int filldata(s_docs *docs, int*mat, int rows, int columns)
+int filldata(s_docs *docs, int*mat ,int *cvect, int rows, int columns)
 {
     int i,j;
     int count=0;
@@ -169,7 +169,7 @@ int filldata(s_docs *docs, int*mat, int rows, int columns)
                 count += pwordnode->freq;
                 pwordnode=pwordnode->next;
             }
-        mat[ INDEX(i,columns-1) ] = pdoc->classid;
+        cvect[ i ] = pdoc->classid;
 #undef INDEX
             pdoc = pdoc->next;
     }

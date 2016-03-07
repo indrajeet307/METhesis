@@ -1,0 +1,7 @@
+Questions:
+Why are we taking mean and variance ??
+    Our values are discrete, it it said that we need to do the exponent, mean, variance
+    thing only when data for that attribute is continuous.
+
+When exactly to do the log operations ? After getting the probability or before ?
+    Because the values go negative( yes we can do abs() )
