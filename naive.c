@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
 int readFromTestFile(char *fname, s_docs **docptr, s_trie **classptr, s_trie **wordptr)
 {
     FILE *fp;
@@ -20,9 +21,9 @@ int readFromTestFile(char *fname, s_docs **docptr, s_trie **classptr, s_trie **w
         return err;
     } 
     char *buff=NULL;
-    size_t count=0;
-    size_t readlen;
     int numWords=0;
+    size_t count=0;
+    size_t readlen=0;
     while( !feof(fp))
     {
         readlen = getline( &buff, &count, fp);
@@ -33,7 +34,7 @@ int readFromTestFile(char *fname, s_docs **docptr, s_trie **classptr, s_trie **w
         {
             printf(" Found an Outlier Class %s\n", class);
             continue;
-            }
+        }
         s_doc *temp = addDocTolist(docptr,  cid);
 
         char *word;
@@ -43,16 +44,19 @@ int readFromTestFile(char *fname, s_docs **docptr, s_trie **classptr, s_trie **w
             int wid = findWord(wordptr, word, strlen(word));
             if( wid < 0)
             {
-                printf(" New Word %s, cannot accomodate\n", word);
+                //printf(" New Word %s, cannot accomodate\n", word);
                 continue;
             }
             addWordDoc(&temp,docptr,wid);
         }
     }
+    if ( buff !=NULL)
+        free(buff);
     printf("Number of words %d\n",numWords);
     fclose(fp);
     return 0;
 }
+
 int readFromTrainFile(char *fname, s_docs **docptr, s_trie **classptr, s_trie **wordptr)
 {
     FILE *fp;
@@ -89,25 +93,43 @@ int readFromTrainFile(char *fname, s_docs **docptr, s_trie **classptr, s_trie **
             addWordDoc(&temp,docptr,wid);
         }
     }
+    if ( buff !=NULL)
+        free(buff);
     printf("Number of words %d\n",numWords);
     fclose(fp);
     return 0;
 }
+
 int* createMatrix( int columns, int rows)
 {
     int *temp = (int*) calloc( sizeof(int), columns*rows);
     return temp;
 }
+
 int *createVector(int columns)
 {
     int *temp = (int*) calloc( sizeof(int), columns);
     return temp;
     }
+
 float* createFloatMatrix( int columns, int rows)
 {
     float *temp = (float*) calloc( sizeof(float), columns*rows);
     return temp;
 }
+
+float getAccuracy(int *pmat, int *cvect, int total)
+    {
+        int i;
+        float ans=0.0;
+        for ( i=0; i<total; i++)
+        {
+            if( pmat[i] == cvect[i])
+                ans ++;
+        }
+        return ans/total;
+    }
+
 int main(int argc, char **argv)
 {
     if( argc < 2)
@@ -118,10 +140,10 @@ int main(int argc, char **argv)
     char * trainfname = argv[1];
     char * testfname = argv[2];
 
-    s_trie *classlist = initTrie();
-    s_trie *wordlist = initTrie();
     s_docs *doclist = initDL();
     s_docs *testdoclist = initDL();
+    s_trie *classlist = initTrie();
+    s_trie *wordlist = initTrie();
 
 
     readFromTrainFile(trainfname, &doclist, &classlist, &wordlist);
@@ -148,24 +170,41 @@ int main(int argc, char **argv)
     assert( cprob != NULL );
     float * probmat=createFloatMatrix( numwords, numclasses); // extra column for probablity of the class
     createProbablityMatrix( mat, probmat, cvect, cprob, numdocs, numwords, numclasses, numwords);
-    free(mat);
-    print(probmat, numclasses, numwords);
+    //print(probmat, numclasses, numwords);
 
+    free(cvect);
     readFromTestFile( testfname, &testdoclist, &classlist, &wordlist);
     numdocs = getNumDocs(testdoclist);
     printf(" Read %d Training Docs\n", numdocs);
     printf(" Containing %d total unique words\n", getNumwords(wordlist));
     int *smat = createMatrix( numwords, numdocs); 
+
+     cvect = createVector( numdocs);    // stores the class info for the doc
+    assert( cvect != NULL );
+
     filldata(testdoclist, smat, cvect, numdocs, numwords);
     int * pmat = createVector( numdocs); // for predicted classID
     
     assignClass( smat, probmat, cprob, pmat, numdocs, numclasses, numwords); 
-    printIntMatrix( pmat, 1, numdocs);
-    printIntMatrix( cvect, 1, numdocs);
+    //printIntMatrix( pmat, 1, numdocs);
+    //printIntMatrix( cvect, 1, numdocs);
+    float acc = getAccuracy(pmat, cvect, numdocs)*100;
+    printf(" Accuracy is %f %%.\n",acc);
     showWords(classlist);
+
+    free(cprob);
     free(cvect);
+    free(fmat);
+    free(mat);
     free(pmat);
-    //free(smat);
+    free(probmat);
+    free(smat);
+    cleanUP(&doclist);
+    cleanUP(&testdoclist);
+
+    deleteTrie( &classlist);
+    deleteTrie( &wordlist);
+    free( doclist);
+    free( testdoclist);
     return 0;
 }
-

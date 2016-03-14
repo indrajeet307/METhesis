@@ -33,6 +33,6 @@ int findWord(s_trie**, char *, int);
 int getNumwords(s_trie*);
 int showWords(s_trie*);
 s_trie * initTrie();
-void deleteTrie();
+void deleteTrie(s_trie**);
 void putWordsToFile(s_trie*, char*);
 #endif // __TRIE_H_

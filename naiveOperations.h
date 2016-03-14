@@ -6,4 +6,7 @@ int normalize( int *, float*, int , int );
 void print( float *, int , int );
 void printIntMatrix( int *, int , int );
 void assignClass( int *, float *,float*, int *, int , int , int );
+int *createMatrix( int , int );
+int *createVector(int );
+float *createFloatMatrix( int , int );
 #endif //__NAIVEOPS_H_

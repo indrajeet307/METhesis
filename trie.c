@@ -66,7 +66,6 @@ void addToPickup(s_garbage_coll **garbage_ptr, void *ptr)
     if((*garbage_ptr) ==NULL)
     {
         (*garbage_ptr) = temp;
-        (*garbage_ptr)->next = temp;
         return;
     }
     temp->next = (*garbage_ptr);
@@ -86,15 +85,13 @@ void clean(s_garbage_coll **garbage_ptr)
     temp = (*garbage_ptr);
     if(temp == NULL)
         return;
-    while(temp->next!=NULL)
+    while(temp!=NULL)
     {
         prev = temp;
         temp = temp->next;
         free(prev->ptr);
         free(prev);
     }
-    free(temp->ptr);
-    free(temp);
     temp = prev = NULL;
     (*garbage_ptr) = NULL;
 }
@@ -125,7 +122,7 @@ s_trie *initTrie()
 {
     int i = 0;
 
-    s_trie *temp = (s_trie*) malloc( sizeof(s_trie));
+    s_trie *temp = (s_trie*) malloc( sizeof(s_trie) );
     temp->trie_ptr = (s_trie_node*) malloc(sizeof(s_trie_node)*MAX_ALPHA);
     temp->word_list = NULL;
     temp->garbage_ptr = NULL;
@@ -144,23 +141,9 @@ s_trie *initTrie()
 void deleteTrie(s_trie ** trie)
 {
     clean( &((*trie)->garbage_ptr) );
+    free(*trie);
     *trie = NULL;
 }
-/*
-   void initWordList()
-   {
-//g_word_list = (word_node*) calloc (sizeof(word_node),MAX_WORDS);
-g_word_list = NULL;
-}
-
-void initDs()
-{
-g_garbage_coll = NULL;
-initTrie();
-initWordList();
-}
-*/
-
 /*
  *	@DESC   : Tells number of words in the trie
  *	@PRAM   : Pointer to the trie

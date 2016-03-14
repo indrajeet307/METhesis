@@ -29,6 +29,7 @@ struct s_docs{
     int numdocs;
 };
 typedef struct s_docs s_docs;
+
 int addWordDoc( s_doc** , s_docs** , int );
 int filldata( s_docs*,int*,int* , int, int);
 int getDocIndex(s_docs** );

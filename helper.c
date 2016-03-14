@@ -6,7 +6,7 @@
 struct s_docs* initDL( )
 {
     s_docs *temp=NULL;
-    temp=(s_docs*)malloc(sizeof(s_docs));
+    temp=(s_docs*)calloc(sizeof(s_docs),1);
     temp->list = NULL;
     temp->grb = NULL;
     return temp;
@@ -19,6 +19,7 @@ s_garbage *addCleanUpPointer(void *ptr)
     temp->next = NULL;
     return temp;
 }
+
 void addToCleanUp( s_docs **dlist, void * ptr)
 {
 
@@ -30,7 +31,7 @@ void addToCleanUp( s_docs **dlist, void * ptr)
 
     s_garbage *temp=addCleanUpPointer(ptr); 
     temp->next = (*dlist)->grb;
-    //(*dlist)->grb = temp;
+    (*dlist)->grb = temp;
     return;
 
 
@@ -50,6 +51,7 @@ void cleanUP(s_docs **dlist)
     }
     (*dlist)->grb == NULL;
 }
+
 s_doc* createDoc(s_docs **dlist,  int classid)
 {
     s_doc *temp = (s_doc*) malloc (sizeof(s_doc));
@@ -70,14 +72,15 @@ struct s_doc* addDocTolist( s_docs **dlist, int classid)
         (*dlist)->list  = createDoc(dlist,  classid);
         return (*dlist)->list;
     }
-    /// check for the doc in the list
-    // Appedn if not  found
+    // check for the doc in the list
+    // append if not  found
     s_doc *temp;
     temp = createDoc(dlist, classid);
     temp->next = (*dlist)->list;
     (*dlist)->list = temp;
     return temp;
 }
+
 s_wordnode * createWord(s_docs **dlist, int id, int count)
 {
     s_wordnode * temp = (s_wordnode*) malloc(sizeof(s_wordnode));
@@ -87,6 +90,7 @@ s_wordnode * createWord(s_docs **dlist, int id, int count)
     temp->next = NULL;
     return temp;
 }
+
 int addWordDoc( s_doc **docptr, s_docs **dlist, int id)
 {
     if( (*docptr)->wlist == NULL )
@@ -116,6 +120,7 @@ int addWordDoc( s_doc **docptr, s_docs **dlist, int id)
     return temp->id;
 
 }
+
 int showWordsDoc(s_doc *docptr)
 {
     s_wordnode *temp = docptr->wlist;
@@ -127,6 +132,7 @@ int showWordsDoc(s_doc *docptr)
     }
     return docptr->wcount;
 }
+
 int showDocs(s_docs *docptr)
 {
     s_doc *temp;
