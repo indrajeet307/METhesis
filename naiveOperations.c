@@ -197,3 +197,14 @@ float* createFloatMatrix( int rows, int columns)
     float *temp = (float*) calloc( sizeof(float), columns*rows);
     return temp;
 }
+float getAccuracy(int *pmat, int *cvect, int total)
+    {
+        int i;
+        float ans=0.0;
+        for ( i=0; i<total; i++)
+        {
+            if( pmat[i] == cvect[i])
+                ans ++;
+        }
+        return ans/total;
+    }

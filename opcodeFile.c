@@ -75,7 +75,7 @@ void addToFiles(s_files ** p_files, s_fileProp ** p_fileprop)
     return;
 }
 
-int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount)
+int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount, s_filelist **trainlist, s_filelist **testlist)
 {
     FILE *fp;
     int err;
@@ -95,14 +95,15 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount)
     char  *filesize ;//= (char*) malloc (sizeof(char)*8);
     char  *numopc   ;//= (char*) malloc (sizeof(char)*8);
     int    numopcodes=0;
-    size_t readlen=0;
+    short int fcount=0;
 
     while( !feof( fp ) )
     {
         char  *buff=NULL;
         size_t count=0;
+    size_t readlen=0;
         numopcodes = 0;
-        printf(" Files read %d\n", numfiles);
+        //printf(" Files read %d\n", numfiles);
         readlen = getline( &buff, &count, fp);
         if( readlen == -1 ) break ;
         //printf(" %s", buff);
@@ -113,25 +114,36 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount)
         numopc   = strtok( NULL, "," );
         int numopcode = atoi( numopc );
         int size = atoi( filesize );
-        if( numopcode > 10 && size < 500)
-        {
-            s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, columns);
-            while( (freq = strtok(NULL,",\n")) != NULL )
+        int index = size/5;
+            if( numopcode > 10 && size < 500 )
             {
-                tempfile->opcodes[numopcodes++] = atoi(freq) ;
+                //printf(" %d\n", index);
+                if ( getClassId( class ) == 0 )
+                groupCount[ index ]++;
+                else
+                    groupCount[ index ] --;
+                    if( groupCount[ index ] >= 0){
+                s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, columns);
+                while( (freq = strtok(NULL,",\n")) != NULL )
+                {
+                    tempfile->opcodes[numopcodes++] = atoi(freq) ;
+                }
+                tempfile->next = NULL;
+                if( fcount < 2)
+                {
+                    addToList( trainlist, tempfile );
+                }
+                else
+                {
+                    fcount=-1;
+                    addToList( testlist, tempfile );
+                }
+                fcount++;
+                addToFiles( p_files, &tempfile);
+                free(buff);
+                numfiles++;
+                    }
             }
-            tempfile->next = NULL;
-            //printf("%d\n", (size)/5 );
-            groupCount[ (size)/5 ]++;
-            addToFiles( p_files, &tempfile);
-            //printf("%s\n", filename);
-            //printf("%s\n", data_set);
-            //printf("%s\n", class);
-            //printf("%d\n", atoi(numopc));
-            //printf("%d\n", atoi(filesize));
-            free(buff);
-            numfiles++;
-        }
     }
     fclose( fp );
     return numfiles;
@@ -144,6 +156,12 @@ void initFiles( s_files ** p_files)
     (*p_files)->garb = NULL;
 }
 
+void initFileList( s_filelist ** p_list)
+{
+    (*p_list) = (s_filelist*) malloc ( sizeof( s_filelist) ) ;
+    (*p_list)->count = 0;
+    (*p_list)->list = NULL;
+}
 void cleanUp( s_garbage * p_garbage)
 {
 }
@@ -180,4 +198,36 @@ void fillTheMatrix( s_files ** p_files, int * p_mat, int * p_cvect, int rows, in
         list= list->next;
         i++;
     }
+}
+
+void fillTheMatrixFromList( s_filelist ** p_files, int * p_mat, int * p_cvect, int rows, int columns)
+{
+    s_filelistnode * list = (*p_files)->list;
+    int i=0,j=0;
+    while( list!= NULL && i<rows)
+    {
+        for( j=0; j<columns; j++)
+        {
+            p_mat[ (i*columns)+j ] = list->prop->opcodes[j];
+        }
+        p_cvect[i] = list->prop->classId;
+        list= list->next;
+        i++;
+    }
+}
+
+void addToList( s_filelist ** p_list, s_fileProp * p_prop)
+{
+    s_filelistnode *temp = NULL;
+    temp = (s_filelistnode*) malloc (sizeof(s_filelistnode) );
+    temp->prop = p_prop;
+    temp->next = NULL;
+    if( (*p_list)->list == NULL)
+    {
+        (*p_list)->list =temp;
+        (*p_list)->count+=1;
+    }
+    temp->next = (*p_list)->list;
+    (*p_list)->list = temp;
+        (*p_list)->count+=1;
 }

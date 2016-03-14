@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 {
     if ( argc < 4 )
     {
-        printf("Usage:  ./main.out <opcode_file> <freq_csv1> <freq_csv2>.\n");
+        printf("Usage:  ./main.out <opcode_file> <benign_freq_csv1> <malware_freq_csv2c>.\n");
         return 0;
     }
     char *opcode_file = argv[1];
@@ -19,27 +19,48 @@ int main(int argc, char **argv)
     int numfiles=0;
     s_trie *opcodelist = initTrie();
     s_files *filelist;
+    s_filelist *testlist, *trainlist;
 
     initFiles(&filelist);
+    initFileList(&testlist);
+    initFileList(&trainlist);
     numopcode = readOpcodeFile( opcode_file, &opcodelist);
     printf(" Found %d opcodes.\n", numopcode);
 
     int *groupCount = createVector( 100);
-    numfiles  = readCSVFile( freq_csv1, numopcode, &filelist, groupCount);
-    numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount);
+    numfiles  = readCSVFile( freq_csv1, numopcode, &filelist, groupCount, &trainlist, &testlist);
+    numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount, &trainlist, &testlist);
     printf(" Found %d files.\n", numfiles);
+    printf(" NUmber of testingFiles %d Number of traning files %d\n", testlist->count, trainlist->count);
 
-    int *mat = createMatrix( numfiles, numopcode);
-    int *p_cvect = createVector( numfiles);
+    int *testmat = createMatrix( testlist->count, numopcode);
+    int *trainmat = createMatrix( trainlist->count, numopcode);
+    //float*probmat = createFloatMatrix( trainlist->count, numopcode);
+    float *probmat = createFloatMatrix( 2, numopcode);
+    int *c_train_vect = createVector( trainlist->count);
+    float *cprob = (float*) calloc (sizeof(float) , 2);
+    int *c_test_vect = createVector( testlist->count);
+    //int *pridict= createVector( testlist->count);
+    int *pridict= createVector( trainlist->count);
 
-    fillTheMatrix( &filelist, mat, p_cvect, numfiles, numopcode);
-    //showFiles( filelist);
-    //printIntMatrix( mat, numfiles, numopcode);
-    //printIntMatrix( p_cvect, numfiles, 1);
-   printIntMatrix( groupCount, 100, 1);
+    //fillTheMatrix( &filelist, mat, p_cvect, numfiles, numopcode);
+    fillTheMatrixFromList( &trainlist, trainmat, c_train_vect, trainlist->count, numopcode);
+    fillTheMatrixFromList( &testlist, testmat,   c_test_vect, testlist->count, numopcode);
+
+     //createProbablityMatrix( trainmat, probmat, c_train_vect, cprob, trainlist->count, numopcode, 2, numopcode);
+     createProbablityMatrix( testmat, probmat, c_test_vect, cprob, testlist->count, numopcode, 2, numopcode);
+    //assignClass( testmat, probmat, cprob, pridict, testlist->count, 2, numopcode);
+    //printIntMatrix( groupCount, 100, 1);
+    //printIntMatrix( c_test_vect, testlist->count, 1);
+    //printIntMatrix( c_train_vect, trainlist->count, 1);
+    assignClass( trainmat, probmat, cprob, pridict, trainlist->count, 2, numopcode);
+    print( cprob, 2, 1);
+    printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(c_train_vect, pridict, trainlist->count));
 
     deleteTrie( &opcodelist ); 
-    free( mat );
-    free( p_cvect );
+    free(testmat);
+   free(trainmat);
+    free(c_train_vect);
+    free(c_test_vect );
     return 0;
 }

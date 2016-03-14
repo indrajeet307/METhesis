@@ -5,3 +5,4 @@ Why are we taking mean and variance ??
 
 When exactly to do the log operations ? After getting the probability or before ?
     Because the values go negative( yes we can do abs() )
+    heh.. To reduce the multiplication to addition ( LOL )
