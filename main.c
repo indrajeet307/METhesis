@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     //showFiles( filelist);
     //printIntMatrix( mat, numfiles, numopcode);
     //printIntMatrix( p_cvect, numfiles, 1);
-    //printIntMatrix( groupCount, 100, 1);
+   printIntMatrix( groupCount, 100, 1);
 
     deleteTrie( &opcodelist ); 
     free( mat );

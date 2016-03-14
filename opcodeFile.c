@@ -12,21 +12,21 @@ int getClassId( char * class)
     return -1;
 }
 
-s_fileProp* createFileNode( char* name, int size, char *data_type, char *class, int numopcode, int columns)
+s_fileProp* createFileNode( char *filename, int filesize, char *data_type, char *class, int numopcode, int totalopcodes)
 {
     s_fileProp* temp = (s_fileProp*) malloc( sizeof(s_fileProp) );
     if( temp == NULL )
     {
         printf(" Malloc Failed \n");
         return NULL;
-        }
-    temp->name = (char*) malloc( sizeof(char) * (strlen(name)+1) );
-    strcpy( temp->name ,name);
+    }
+    temp->name = (char*) malloc( sizeof(char) * (strlen(filename)+1) );
+    strcpy( temp->name ,filename);
     temp->numopcode = numopcode;
-    temp->size = size;
+    temp->size = filesize;
     //temp->data_type = data_type;
     temp->classId   = getClassId(class);
-    temp->opcodes = (int*) malloc ( sizeof(int) * columns);
+    temp->opcodes = (int*) calloc ( sizeof(int) , totalopcodes);
     return temp;
 }
 
@@ -113,26 +113,25 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount)
         numopc   = strtok( NULL, "," );
         int numopcode = atoi( numopc );
         int size = atoi( filesize );
-        if( numopcode <= 20 && size > 500)
+        if( numopcode > 10 && size < 500)
         {
-            //printf(" Empty File \n");
-            continue;
+            s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, columns);
+            while( (freq = strtok(NULL,",\n")) != NULL )
+            {
+                tempfile->opcodes[numopcodes++] = atoi(freq) ;
+            }
+            tempfile->next = NULL;
+            //printf("%d\n", (size)/5 );
+            groupCount[ (size)/5 ]++;
+            addToFiles( p_files, &tempfile);
+            //printf("%s\n", filename);
+            //printf("%s\n", data_set);
+            //printf("%s\n", class);
+            //printf("%d\n", atoi(numopc));
+            //printf("%d\n", atoi(filesize));
+            free(buff);
+            numfiles++;
         }
-        s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, columns);
-        while( (freq = strtok(NULL,",\n")) != NULL )
-        {
-            tempfile->opcodes[numopcodes++] = atoi(freq) ;
-        }
-        tempfile->next = NULL;
-        //groupCount[ (size)/5 ]++;
-        addToFiles( p_files, &tempfile);
-        //printf("%s\n", filename);
-        //printf("%s\n", data_set);
-        //printf("%s\n", class);
-        //printf("%d\n", atoi(numopc));
-        //printf("%d\n", atoi(filesize));
-        free(buff);
-        numfiles++;
     }
     fclose( fp );
     return numfiles;
