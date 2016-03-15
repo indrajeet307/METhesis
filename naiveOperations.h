@@ -10,4 +10,5 @@ int *createMatrix( int , int );
 int *createVector(int );
 float *createFloatMatrix( int , int );
 float getAccuracy(int *pmat, int *cvect, int total);
+void rotateMatrix( int *inmat, int *outmat, int inrows, int incolumns);
 #endif //__NAIVEOPS_H_

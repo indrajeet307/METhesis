@@ -197,6 +197,7 @@ float* createFloatMatrix( int rows, int columns)
     float *temp = (float*) calloc( sizeof(float), columns*rows);
     return temp;
 }
+
 float getAccuracy(int *pmat, int *cvect, int total)
     {
         int i;
@@ -208,3 +209,18 @@ float getAccuracy(int *pmat, int *cvect, int total)
         }
         return ans/total;
     }
+
+void rotateMatrix( int *inmat, int *outmat, int inrows, int incolumns)
+{
+    int outrows=incolumns;
+    int outcolumns=inrows;
+    int i,j;
+
+    for ( i=0; i<inrows; i++)
+    {
+        for ( j=0;j<incolumns;j++)
+        {
+            outmat[ j*outcolumns + i ] = inmat[ i*incolumns+j ];
+        }
+    }
+}
