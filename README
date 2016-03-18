@@ -3,6 +3,23 @@ Why are we taking mean and variance ??
     Our values are discrete, it it said that we need to do the exponent, mean, variance
     thing only when data for that attribute is continuous.
 
-When exactly to do the log operations ? After getting the probability or before ?
+[ SOLVED ]When exactly to do the log operations ? After getting the probability or before ?
     Because the values go negative( yes we can do abs() )
     heh.. To reduce the multiplication to addition ( LOL )
+
+
+IMPLEMENTATION APPROACHES
+[ PARTIAL ] FOR A) Generating the probability matrix
+Approach 1: [ DONE ]
+    #threads = #files
+    each thread iterates over each opcode and contributes to the opcode of class to which
+    the current file belongs
+    Drawbacks: This is scatter method which is not suitable for CUDA applications
+               Requires many atomic operations
+
+[ DONE ] FOR B) Assigning the class
+Approach 1: [ DONE ]
+    #threads = #files
+    each thread for each class calculates the summation of probability for each opcode
+    assigns class with the maximum probability
+    Drawbacks: Has many nested for loops, huge control divergence

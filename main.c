@@ -53,13 +53,14 @@ int main(int argc, char **argv)
     //printIntMatrix( groupCount, 100, 1);
     //printIntMatrix( c_test_vect, testlist->count, 1);
     //printIntMatrix( c_train_vect, trainlist->count, 1);
+    print( probmat, 2, numopcode);
     assignClass( trainmat, probmat, cprob, pridict, trainlist->count, 2, numopcode);
     print( cprob, 2, 1);
     printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(c_train_vect, pridict, trainlist->count));
 
     deleteTrie( &opcodelist ); 
     free(testmat);
-   free(trainmat);
+    free(trainmat);
     free(c_train_vect);
     free(c_test_vect );
     return 0;
