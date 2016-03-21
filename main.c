@@ -3,6 +3,8 @@
 #include "opcodeFile.h"
 #include "trie.h"
 #include "naiveOperations.h"
+#define NUM_CLASSES 2
+#define NUM_GROUPS 100 // file of size upto 500kb, group of 5kb each
 int main(int argc, char **argv)
 {
     if ( argc < 4 )
@@ -20,19 +22,24 @@ int main(int argc, char **argv)
     s_trie *opcodelist = initTrie();
     s_files *filelist;
     s_filelist *testlist, *trainlist;
+    s_group *grouplist;
 
     initFiles(&filelist);
     initFileList(&testlist);
     initFileList(&trainlist);
+    initGroups( &grouplist, 100);
     numopcode = readOpcodeFile( opcode_file, &opcodelist);
     printf(" Found %d opcodes.\n", numopcode);
 
-    int *groupCount = createVector( 100);
+    int *groupCount = createVector(NUM_GROUPS * NUM_CLASSES);
     numfiles  = readCSVFile( freq_csv1, numopcode, &filelist, groupCount, &trainlist, &testlist);
     numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount, &trainlist, &testlist);
     printf(" Found %d files.\n", numfiles);
     printf(" NUmber of testingFiles %d Number of traning files %d\n", testlist->count, trainlist->count);
 
+    adjustCount( groupCount, NUM_GROUPS);
+    doGrouping( filelist, groupCount, &grouplist);
+    showGroupWiseStats( grouplist, NUM_GROUPS);
     int *testmat = createMatrix( testlist->count, numopcode);
     int *trainmat = createMatrix( trainlist->count, numopcode);
     //float*probmat = createFloatMatrix( trainlist->count, numopcode);
@@ -53,10 +60,10 @@ int main(int argc, char **argv)
     //printIntMatrix( groupCount, 100, 1);
     //printIntMatrix( c_test_vect, testlist->count, 1);
     //printIntMatrix( c_train_vect, trainlist->count, 1);
-    print( probmat, 2, numopcode);
+    //print( probmat, 2, numopcode);
     assignClass( trainmat, probmat, cprob, pridict, trainlist->count, 2, numopcode);
-    print( cprob, 2, 1);
-    printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(c_train_vect, pridict, trainlist->count));
+    //print( cprob, 2, 1);
+    //printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(c_train_vect, pridict, trainlist->count));
 
     deleteTrie( &opcodelist ); 
     free(testmat);

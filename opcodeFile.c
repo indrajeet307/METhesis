@@ -101,7 +101,7 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount, 
     {
         char  *buff=NULL;
         size_t count=0;
-    size_t readlen=0;
+        size_t readlen=0;
         numopcodes = 0;
         //printf(" Files read %d\n", numfiles);
         readlen = getline( &buff, &count, fp);
@@ -115,35 +115,38 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount, 
         int numopcode = atoi( numopc );
         int size = atoi( filesize );
         int index = size/5;
-            if( numopcode > 10 && size < 500 )
-            {
-                //printf(" %d\n", index);
-                if ( getClassId( class ) == 0 )
-                groupCount[ index ]++;
-                else
-                    groupCount[ index ] --;
-                    if( groupCount[ index ] >= 0){
-                s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, columns);
-                while( (freq = strtok(NULL,",\n")) != NULL )
-                {
-                    tempfile->opcodes[numopcodes++] = atoi(freq) ;
-                }
-                tempfile->next = NULL;
-                if( fcount < 2)
-                {
-                    addToList( trainlist, tempfile );
-                }
-                else
-                {
-                    fcount=-1;
-                    addToList( testlist, tempfile );
-                }
-                fcount++;
-                addToFiles( p_files, &tempfile);
-                free(buff);
-                numfiles++;
-                    }
-            }
+        if( numopcode > 10 && size < 500 )
+        {
+            //printf(" %d\n", index);
+            /*
+               if ( getClassId( class ) == 0 )
+               groupCount[ index ]++;
+               else
+               groupCount[ index ] --;
+               if( groupCount[ index ] >= 0)
+               while( (freq = strtok(NULL,",\n")) != NULL )
+               {
+               tempfile->opcodes[numopcodes++] = atoi(freq) ;
+               }
+               tempfile->next = NULL;
+               if( fcount < 2)
+               {
+               addToList( trainlist, tempfile );
+               }
+               else
+               {
+               fcount=-1;
+               addToList( testlist, tempfile );
+               }
+               fcount++; */
+
+            groupCount[ index*2 + getClassId(class) ] += 1; // TODO replace 2 with NUM_CLASSES
+
+            s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, columns);
+            addToFiles( p_files, &tempfile);
+            free(buff);
+            numfiles++;
+        }
     }
     fclose( fp );
     return numfiles;
@@ -162,6 +165,7 @@ void initFileList( s_filelist ** p_list)
     (*p_list)->count = 0;
     (*p_list)->list = NULL;
 }
+
 void cleanUp( s_garbage * p_garbage)
 {
 }
@@ -229,5 +233,89 @@ void addToList( s_filelist ** p_list, s_fileProp * p_prop)
     }
     temp->next = (*p_list)->list;
     (*p_list)->list = temp;
-        (*p_list)->count+=1;
+    (*p_list)->count+=1;
+}
+
+void adjustCount(int* out_groupcount, int num_groups)
+{
+    int i;
+    int count;
+    for(  i=0; i<num_groups*2; i+=2)
+    {
+        if( out_groupcount[ i+0 ] > out_groupcount[ i+1 ])
+            out_groupcount[ i+0 ] = out_groupcount[ i+1 ];
+        else
+            out_groupcount[ i+1 ] = out_groupcount[ i+0 ];
+    }
+}
+/*
+ *	@DESC   : Does grouping for only 2 classes
+ *          : TODO make it genric for n classes
+ *	@PRAM   : What are the parameters?
+ *	@RETURN : What does it return?
+ *	
+ */
+void doGrouping( s_files* in_files, int* in_groupcount, s_group ** out_groups)
+{
+    s_fileProp *temp = in_files->list;
+    int groupIndex=0;
+    int classId=-1;
+    int index=0;
+    while( temp != NULL )
+    {
+        groupIndex = temp->size/5;
+        classId = temp->classId;
+        index = groupIndex*2+ classId;
+        if( in_groupcount[ index ] > 0 )
+        {
+
+            addToGroup( out_groups, groupIndex, temp );
+            in_groupcount[ index ]--;
+        }
+        temp = temp->next;
+    }
+}
+
+void addToGroup( s_group ** out_groups, int in_gropup_index, s_fileProp *in_fileprop)
+{
+    s_filelistnode *temp,*new_node;
+    s_group *currgrp;
+    currgrp =&( (*out_groups)[in_gropup_index] );
+    new_node = (s_filelistnode*) malloc (sizeof(s_filelistnode) );
+    new_node->prop = in_fileprop;
+    new_node->next = NULL;
+    temp = (*out_groups)[in_gropup_index].list;
+    if( temp == NULL )
+    {
+        currgrp->list = new_node;
+        currgrp->count = 1;
+        currgrp->max = in_fileprop->numopcode;
+        currgrp->min = in_fileprop->numopcode;
+        
+        return;
+    }
+    new_node->next = temp->next;
+    currgrp->list = new_node;
+    currgrp->count += 1;
+    currgrp->max = (in_fileprop->numopcode > currgrp->max) ? in_fileprop->numopcode : currgrp->max ;
+    currgrp->min = (in_fileprop->numopcode < currgrp->min) ? in_fileprop->numopcode : currgrp->min ;
+}
+
+void showGroupWiseStats( s_group * in_groups , int in_num_groups)
+{
+    int i;
+    for( i=0; i< in_num_groups; i++)
+    {
+        printf(" Group %d, has %d files, max opcode count = %d, min opcode count = %d.\n", \
+        i+1, in_groups[i].count, in_groups[i].max, in_groups[i].min);
+    }
+}
+void initGroups( s_group ** out_groups, int in_count)
+{
+    (*out_groups) = (s_group*) calloc(sizeof(s_group), in_count);
+    int i;
+    for ( i=0; i<in_count; i++)
+    {
+        (*out_groups)[i].list=NULL;
+    }     
 }

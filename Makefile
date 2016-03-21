@@ -12,6 +12,7 @@ naive: naive.c
 
 init:
 	mkdir -p $(BIN)
+	ctags *.c *.h
 
 clean: 
 	rm -f ./bin/

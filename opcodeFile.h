@@ -19,8 +19,8 @@ struct garbage{
 typedef struct garbage s_garbage;
 
 struct files{
-    s_fileProp *list;
     int numFiles;
+    s_fileProp *list;
     s_garbage *garb;
 };
 typedef struct files s_files;
@@ -51,14 +51,18 @@ int readCSVFile(char*, int, s_files**, int*,s_filelist**,s_filelist**);
 int readOpcodeFile(char*, s_trie**);
 s_fileProp* createFileNode( char* , int , char *, char *, int, int);
 void addToGarbage(void *);
+void addToList( s_filelist **, s_fileProp *);
 void deleteFiles(s_files**);
 void fillTheMatrix( s_files ** , int * , int * , int , int );
-void initFiles(s_files**);
-void initFileList(s_filelist**);
-void initGroups( s_group*);
-void showFiles(s_files*);
-void addToList( s_filelist **, s_fileProp *);
 void fillTheMatrixFromList( s_filelist ** p_files, int * p_mat, int * p_cvect, int rows, int columns);
+void initFileList(s_filelist**);
+void initFiles(s_files**);
+void showFiles(s_files*);
+void adjustCount(int* out_groupcount, int num_groups);
+void doGrouping( s_files* in_files, int* in_groupcount, s_group ** out_groups);
+void addToGroup( s_group ** out_groups, int in_gropup_index, s_fileProp *in_fileprop);
+void showGroupWiseStats( s_group * in_groups , int in_num_groups);
+void initGroups( s_group ** out_groups, int count);
 
 
 
