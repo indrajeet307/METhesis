@@ -67,7 +67,9 @@ int createClassWiseData( int *mat, int *outmat, int inrows, int incolumns, int o
  *	@RETURN : the probably matrix is modified
  *	
  */
-int createProbablityMatrix( int *inmat, float *outmat, int *cvect, float *cprob, int inrows, int incolumns, int outrows, int outcolumns)
+int createProbablityMatrix( int *inmat, float *outmat, int *cvect, 
+                            float *cprob, int inrows, int incolumns, 
+                            int outrows, int outcolumns)
 {
 #define  INDEX(i,j,cols) ((i*cols)+j)
     int i,j;
@@ -222,5 +224,20 @@ void rotateMatrix( int *inmat, int *outmat, int inrows, int incolumns)
         {
             outmat[ j*outcolumns + i ] = inmat[ i*incolumns+j ];
         }
+    }
+}
+
+void createProbablityMatrixUsingMeanVariance( float *in_data_matrix, int in_num_groups, 
+                                              int in_num_opcodes, int in_num_classes, 
+                                              int *in_clss_vect, int *out_prob_vector)
+{
+    int mean=0,var=1;
+    int i,j;
+    for ( i=0; i<in_num_groups*2; i+=2)
+    {
+       for ( ; ; )
+       {
+           
+       } 
     }
 }

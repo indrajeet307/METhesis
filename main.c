@@ -13,8 +13,8 @@ int main(int argc, char **argv)
         return 0;
     }
     char *opcode_file = argv[1];
-    char *freq_csv1   = argv[2];
-    char *freq_csv2   = argv[3];
+    char *freq_csv1   = argv[2]; //benign CSV
+    char *freq_csv2   = argv[3]; //malware CSV
 
     int i,j;
     int numopcode=0;
@@ -32,14 +32,18 @@ int main(int argc, char **argv)
     printf(" Found %d opcodes.\n", numopcode);
 
     int *groupCount = createVector(NUM_GROUPS * NUM_CLASSES);
-    numfiles  = readCSVFile( freq_csv1, numopcode, &filelist, groupCount, &trainlist, &testlist);
-    numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount, &trainlist, &testlist);
+    numfiles  = readCSVFile( freq_csv1, numopcode, &filelist, groupCount);
+    numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount);
     printf(" Found %d files.\n", numfiles);
     printf(" NUmber of testingFiles %d Number of traning files %d\n", testlist->count, trainlist->count);
-
     adjustCount( groupCount, NUM_GROUPS);
+    normalizeFilelist( &filelist);
     doGrouping( filelist, groupCount, &grouplist);
-    showGroupWiseStats( grouplist, NUM_GROUPS);
+   showGroupWiseStats( grouplist, NUM_GROUPS); 
+
+   float *processedArray = createFloatMatrix( NUM_GROUPS*2,numopcode);
+   fillGroupWiseData(grouplist,processedArray, NUM_GROUPS, numopcode);
+   showGroupWiseProcessedValues(processedArray, NUM_GROUPS, numopcode);
     int *testmat = createMatrix( testlist->count, numopcode);
     int *trainmat = createMatrix( trainlist->count, numopcode);
     //float*probmat = createFloatMatrix( trainlist->count, numopcode);

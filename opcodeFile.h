@@ -6,8 +6,11 @@ struct fileProp{
     int numopcode;
     int size;
     int data_type;
+    int min_opcodefreq;
+    int max_opcodefreq;
     int classId;
     int *opcodes;
+    float *normalized_opcodes;
     struct fileProp * next;
 };
 typedef struct fileProp s_fileProp;
@@ -39,7 +42,7 @@ typedef struct filelist s_filelist;
 
 
 struct group {
-    s_filelistnode *list;
+    s_filelistnode *list[2];  // TODO make this NUM_CLASSES
     int count;
     int max;
     int min; 
@@ -47,7 +50,7 @@ struct group {
 typedef struct group s_group;
 
 
-int readCSVFile(char*, int, s_files**, int*,s_filelist**,s_filelist**);
+int readCSVFile(char* in_filename, int in_numopcode, s_files** out_filelist, int* out_groupcount);
 int readOpcodeFile(char*, s_trie**);
 s_fileProp* createFileNode( char* , int , char *, char *, int, int);
 void addToGarbage(void *);
@@ -63,7 +66,9 @@ void doGrouping( s_files* in_files, int* in_groupcount, s_group ** out_groups);
 void addToGroup( s_group ** out_groups, int in_gropup_index, s_fileProp *in_fileprop);
 void showGroupWiseStats( s_group * in_groups , int in_num_groups);
 void initGroups( s_group ** out_groups, int count);
-
+void normalizeFilelist( s_files** out_filelist );
+void fillGroupWiseData( s_group *in_groups, float *out_data_matrix, int in_num_groups, int in_num_opcodes);
+void showGroupWiseProcessedValues( float *out_data_matrix, int in_num_groups, int in_num_opcodes);
 
 
 #endif//__OPCHEADER_H_

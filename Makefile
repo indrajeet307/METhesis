@@ -15,4 +15,5 @@ init:
 	ctags *.c *.h
 
 clean: 
-	rm -f ./bin/
+	rm -rf ./bin/
+	rm *.out
