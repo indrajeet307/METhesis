@@ -1,13 +1,19 @@
 #include "trie.h"
 #ifndef __OPCHEADER_H_
 #define __OPCHEADER_H_
+struct opcodenode{
+    int id;
+    int freq;
+};
+typedef struct opcodenode s_opcodenode;
+    
 struct fileProp{
     char *name;
     int numopcode;
     int size;
     int data_type;
     int classId;
-    int *opcodes;
+    s_opcodenode *opcodes;
     struct fileProp * next;
 };
 typedef struct fileProp s_fileProp;

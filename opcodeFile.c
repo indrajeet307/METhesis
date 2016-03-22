@@ -1,9 +1,10 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
 #include "opcodeFile.h"
 #include "trie.h"
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
 int getClassId( char * class)
 {
@@ -26,7 +27,7 @@ s_fileProp* createFileNode( char *filename, int filesize, char *data_type, char 
     temp->size = filesize;
     //temp->data_type = data_type;
     temp->classId   = getClassId(class);
-    temp->opcodes = (int*) calloc ( sizeof(int) , totalopcodes);
+    temp->opcodes = (s_opcodenode*) calloc ( sizeof(s_opcodenode) , numopcode);
     return temp;
 }
 
@@ -101,8 +102,9 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount, 
     {
         char  *buff=NULL;
         size_t count=0;
-    size_t readlen=0;
+        size_t readlen=0;
         numopcodes = 0;
+        int id=0;
         //printf(" Files read %d\n", numfiles);
         readlen = getline( &buff, &count, fp);
         if( readlen == -1 ) break ;
@@ -126,7 +128,14 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount, 
                 s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, columns);
                 while( (freq = strtok(NULL,",\n")) != NULL )
                 {
-                    tempfile->opcodes[numopcodes++] = atoi(freq) ;
+                    if( atoi(freq) > 0)
+                    {
+                        tempfile->opcodes[ numopcodes ].id = id;
+                        tempfile->opcodes[ numopcodes++ ].freq = atoi(freq) ;
+                        assert( atoi(freq) > 0 );
+                        printf("%d %d\t", id, atoi(freq));
+                    }
+                    id++;
                 }
                 tempfile->next = NULL;
                 if( fcount < 2)
@@ -190,9 +199,9 @@ void fillTheMatrix( s_files ** p_files, int * p_mat, int * p_cvect, int rows, in
     int i=0,j=0;
     while( list!= NULL)
     {
-        for( j=0; j<columns; j++)
+        for( j=0; j<list->numopcode; j++)
         {
-            p_mat[ (i*columns)+j ] = list->opcodes[j];
+            p_mat[ (i*columns)+ list->opcodes[j].id ] = list->opcodes[j].freq;
         }
         p_cvect[i] = list->classId;
         list= list->next;
@@ -206,9 +215,9 @@ void fillTheMatrixFromList( s_filelist ** p_files, int * p_mat, int * p_cvect, i
     int i=0,j=0;
     while( list!= NULL && i<rows)
     {
-        for( j=0; j<columns; j++)
+        for( j=0; j<list->prop->numopcode; j++)
         {
-            p_mat[ (i*columns)+j ] = list->prop->opcodes[j];
+            p_mat[ (i*columns)+ list->prop->opcodes[j].id ] = list->prop->opcodes[j].freq;
         }
         p_cvect[i] = list->prop->classId;
         list= list->next;
