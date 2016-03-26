@@ -67,7 +67,9 @@ int createClassWiseData( int *mat, int *outmat, int inrows, int incolumns, int o
  *	@RETURN : the probably matrix is modified
  *	
  */
-int createProbablityMatrix( int *inmat, float *outmat, int *cvect, float *cprob, int inrows, int incolumns, int outrows, int outcolumns)
+int createProbablityMatrix( int *inmat, float *outmat, int *cvect, 
+                            float *cprob, int inrows, int incolumns, 
+                            int outrows, int outcolumns)
 {
 #define  INDEX(i,j,cols) ((i*cols)+j)
     int i,j;
@@ -222,5 +224,72 @@ void rotateMatrix( int *inmat, int *outmat, int inrows, int incolumns)
         {
             outmat[ j*outcolumns + i ] = inmat[ i*incolumns+j ];
         }
+    }
+}
+
+void createProbablityMatrixUsingMeanVariance( float *in_data_matrix, int in_num_groups, 
+                                              int in_num_opcodes, int in_num_classes, 
+                                              int *in_clss_vect, int *out_prob_vector )
+{
+    int mean=0,var=1;
+    int i,j;
+    for ( i=0; i<in_num_groups*2; i+=2)
+    {
+       for ( ; ; )
+       {
+           
+       } 
+    }
+}
+
+
+float getTheProbablity( float vval, float vmean, float vvar)
+{
+
+    float result=0.0;
+    float val1 =  1/sqrt( 2.0* M_PI* vvar);
+    float val2 = (vval-vmean)*(vval-vmean)/(2.0*vvar);
+    val2 = 1 / exp( val2);
+    result = log( val1*val2);
+    if( isnan(result) || isinf(result) ) return 0.0;
+    return result;
+}
+
+void assignClassUsingMeanVarianceData(
+                                       float *in_trainArray,
+                                       float *in_testArray,
+                                       int in_num_groups,
+                                       int in_num_opcodes,
+                                       int in_numtestfiles,
+                                       int *in_group_index,
+                                       int *out_predict_vect )
+{
+    int i,j,k;
+    float pmal=0.0, pben=0.0;
+    int mean =0, var =1;
+    float vmean =0, vvar =1;
+    int index=0;
+    for ( i=0; i<in_numtestfiles; i++)
+    {
+        index = in_group_index[i]*4;
+        pmal=0.0; 
+        pben=0.0;
+        for ( j=0; j<in_num_opcodes; j++)
+        {
+            if( in_testArray[j] > 0 ) 
+            {
+                vmean = in_trainArray[(index+0+mean)*in_num_opcodes+j];
+                vvar  = in_trainArray[(index+0+var )*in_num_opcodes+j];
+                assert( vmean >= 0.0f && vvar >= 0.0f );
+                pmal += getTheProbablity( in_testArray[j], vmean, vvar);
+
+                vmean = in_trainArray[(index+2+mean)*in_num_opcodes+j];
+                vvar  = in_trainArray[(index+2+var )*in_num_opcodes+j];
+                assert( vmean >= 0.0f && vvar >= 0.0f );
+                pben += getTheProbablity( in_testArray[j], vmean, vvar);
+            }
+        }
+        printf(" %f, %f\t", pmal, pben);
+        out_predict_vect[i] = pmal < pben ? 0 : 1;
     }
 }

@@ -1,15 +1,19 @@
 #include "opcodeFile.h"
 #include "trie.h"
+#include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
+// TODO update all enums with
+// http://stackoverflow.com/questions/1102542/how-to-define-an-enumerated-type-enum-in-c
+enum classId{ BENIGN=0, MALWARE=1, UNKNOWN };
 int getClassId( char * class)
 {
-    if ( strcmp( class, "MALWARE") == 0 ) return 1;
-    if ( strcmp( class, "BENIGN") == 0 ) return 0;
+    if ( strcmp( class, "MALWARE") == 0 ) return MALWARE;
+    if ( strcmp( class, "BENIGN") == 0 ) return BENIGN;
     return -1;
 }
 
@@ -25,9 +29,9 @@ s_fileProp* createFileNode( char *filename, int filesize, char *data_type, char 
     strcpy( temp->name ,filename);
     temp->numopcode = numopcode;
     temp->size = filesize;
-    //temp->data_type = data_type;
     temp->classId   = getClassId(class);
     temp->opcodes = (s_opcodenode*) calloc ( sizeof(s_opcodenode) , numopcode);
+    temp->normalized_opcodes = (float*) calloc ( sizeof(float) , numopcode);
     return temp;
 }
 
@@ -53,9 +57,7 @@ int readOpcodeFile( char* fname, s_trie** opcodelist)
     {
         readlen = getline( &buff, &count, fp);
         if( readlen == -1 ) break ;
-        //printf(" %s", buff);
         opcode = strtok( buff, "\n" );
-        //printf("%s", opcode);
         numopcodes++;
     }
     fclose( fp );
@@ -65,7 +67,6 @@ int readOpcodeFile( char* fname, s_trie** opcodelist)
 void addToFiles(s_files ** p_files, s_fileProp ** p_fileprop)
 {
     (*p_files)->numFiles ++;
-    //addToGarbage( (*p_files)->garb, (void*) (*p_files));
     if( (*p_files)->list== NULL )
     {
         (*p_files)->list = (*p_fileprop);
@@ -76,13 +77,13 @@ void addToFiles(s_files ** p_files, s_fileProp ** p_fileprop)
     return;
 }
 
-int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount, s_filelist **trainlist, s_filelist **testlist)
+int readCSVFile( char* in_filename, int in_numopcode, s_files ** out_fillist, int *out_groupcount)
 {
     FILE *fp;
     int err;
     int numfiles=0;
     err = errno = 0;
-    fp = fopen( fname, "r");
+    fp = fopen( in_filename, "r");
     err = errno;
     if( fp == NULL )
     {
@@ -105,10 +106,8 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount, 
         size_t readlen=0;
         numopcodes = 0;
         int id=0;
-        //printf(" Files read %d\n", numfiles);
         readlen = getline( &buff, &count, fp);
         if( readlen == -1 ) break ;
-        //printf(" %s", buff);
         filename = strtok( buff, "," );
         filesize = strtok( NULL, "," );
         data_set = strtok( NULL, "," );
@@ -117,42 +116,40 @@ int readCSVFile( char* fname, int columns, s_files ** p_files, int *groupCount, 
         int numopcode = atoi( numopc );
         int size = atoi( filesize );
         int index = size/5;
-            if( numopcode > 10 && size < 500 )
+        int max = INT_MIN;
+        int min = INT_MAX;
+
+
+        if( numopcode > 10 && size < 500 )
+        {
+            out_groupcount[ index*2 + getClassId(class) ] += 1; // TODO replace 2 with NUM_CLASSES
+
+            s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, in_numopcode);
+            while( (freq = strtok(NULL,",\n")) != NULL )
             {
-                //printf(" %d\n", index);
-                if ( getClassId( class ) == 0 )
-                groupCount[ index ]++;
-                else
-                    groupCount[ index ] --;
-                    if( groupCount[ index ] >= 0){
-                s_fileProp *tempfile = createFileNode( filename, size, data_set, class, numopcode, columns);
-                while( (freq = strtok(NULL,",\n")) != NULL )
+                int currfreq = atoi(freq);
+                if( currfreq > 0)
                 {
-                    if( atoi(freq) > 0)
-                    {
-                        tempfile->opcodes[ numopcodes ].id = id;
-                        tempfile->opcodes[ numopcodes++ ].freq = atoi(freq) ;
-                        assert( atoi(freq) > 0 );
-                        printf("%d %d\t", id, atoi(freq));
-                    }
-                    id++;
+                    if (  currfreq> max ) max = currfreq;
+                    if ( currfreq< min ) min = currfreq;
+                    tempfile->opcodes[ numopcodes ].id = id;
+                    tempfile->opcodes[ numopcodes++ ].freq = currfreq ;
+                    assert( atoi(freq) > 0 );
                 }
-                tempfile->next = NULL;
-                if( fcount < 2)
-                {
-                    addToList( trainlist, tempfile );
-                }
-                else
-                {
-                    fcount=-1;
-                    addToList( testlist, tempfile );
-                }
-                fcount++;
-                addToFiles( p_files, &tempfile);
-                free(buff);
-                numfiles++;
-                    }
+                id++;
             }
+            // THIS IS REALLY WEIRED NEED TO DO SOMETHING ABOUT THIS
+            if( numopcodes < numopcode  ) // Just in case the CSV  as an opcode 
+            {
+                tempfile->numopcode = numopcodes;
+            }
+            tempfile->min_opcodefreq = min;
+            tempfile->max_opcodefreq = max;
+            tempfile->next = NULL;
+            addToFiles( out_fillist, &tempfile);
+            free(buff);
+            numfiles++;
+        }
     }
     fclose( fp );
     return numfiles;
@@ -171,6 +168,18 @@ void initFileList( s_filelist ** p_list)
     (*p_list)->count = 0;
     (*p_list)->list = NULL;
 }
+
+void initGroups( s_group ** out_groups, int in_count)
+{
+    (*out_groups) = (s_group*) calloc(sizeof(s_group), in_count);
+    int i;
+    for ( i=0; i<in_count; i++)
+    {
+        (*out_groups)[i].list[0]=NULL;
+        (*out_groups)[i].list[1]=NULL;
+    }     
+}
+
 void cleanUp( s_garbage * p_garbage)
 {
 }
@@ -185,10 +194,18 @@ void deleteFiles( s_files ** p_files)
 void showFiles( s_files * p_files)
 {
     s_fileProp * temp = p_files->list;
+    s_opcodenode *opcptr = NULL;
     int count = p_files->numFiles;
     while ( temp != NULL)
     {
         printf("%d %s %d\n", count--, temp->name, temp->numopcode);
+        opcptr = temp->opcodes;
+        int i=0;
+        while( i<temp->numopcode)
+        {
+            printf( " %d=%d\t", opcptr[i].id, opcptr[i].freq);
+            i++;
+        }
         temp = temp->next;
     }
 }
@@ -238,5 +255,228 @@ void addToList( s_filelist ** p_list, s_fileProp * p_prop)
     }
     temp->next = (*p_list)->list;
     (*p_list)->list = temp;
-        (*p_list)->count+=1;
+    (*p_list)->count+=1;
+}
+
+int adjustCountInEachGroup(int* out_groupcount, int num_groups)
+{
+    int i;
+    int count=0;
+    for(  i=0; i<num_groups*2; i+=2)
+    {
+        if( out_groupcount[ i+0 ] > out_groupcount[ i+1 ])
+        {
+            out_groupcount[ i+0 ] = out_groupcount[ i+1 ];
+            count += out_groupcount[i+0];
+        }
+        else
+        {
+            out_groupcount[ i+1 ] = out_groupcount[ i+0 ];
+            count += out_groupcount[i+1];
+        }
+    }
+    return count*2;
+}
+/*
+ *	@DESC   : Does grouping for only 2 classes
+ *          : TODO make it genric for n classes
+ *	@PRAM   : What are the parameters?
+ *	@RETURN : What does it return?
+ *	
+ */
+void doGrouping( s_files* in_files, int* in_groupcount, s_group ** out_groups)
+{
+    s_fileProp *temp = in_files->list;
+    int groupIndex=0;
+    int classId=-1;
+    int index=0;
+    while( temp != NULL )
+    {
+        groupIndex = temp->size/5;
+        classId = temp->classId;
+        index = groupIndex*2+ classId;
+        if( in_groupcount[ index ] > 0 )
+        {
+
+            addToGroup( out_groups, groupIndex, temp );
+            in_groupcount[ index ]--;
+        }
+        temp = temp->next;
+    }
+}
+
+void addToGroup( s_group ** out_groups, int in_gropup_index, s_fileProp *in_fileprop)
+{
+    s_filelistnode *temp,*new_node;
+    s_group *currgrp;
+    int currClassId = in_fileprop->classId;
+
+    currgrp =&( (*out_groups)[in_gropup_index] );
+
+    temp = (*out_groups)[in_gropup_index].list[  currClassId ];
+
+    new_node = (s_filelistnode*) malloc (sizeof(s_filelistnode) );
+    new_node->prop = in_fileprop;
+    new_node->next = NULL;
+
+    if( temp == NULL )
+    {
+        currgrp->list[ currClassId ] = new_node;
+        currgrp->list[ currClassId ]->next  = NULL;
+
+        currgrp->count = 1;
+        currgrp->max = in_fileprop->numopcode;
+        currgrp->min = in_fileprop->numopcode;
+
+        return;
+    }
+    new_node->next = currgrp->list[ currClassId ];
+    currgrp->list[ currClassId ] = new_node;
+
+    currgrp->count += 1;
+    currgrp->max = (in_fileprop->numopcode > currgrp->max) ? in_fileprop->numopcode : currgrp->max ;
+    currgrp->min = (in_fileprop->numopcode < currgrp->min) ? in_fileprop->numopcode : currgrp->min ;
+}
+
+void showGroupWiseStats( s_group * in_groups , int in_num_groups)
+{
+    int i,j,c;
+    for( i=0; i< in_num_groups; i++)
+    {
+        printf(" Group %d, has %d files, max opcode count = %d, min opcode count = %d.\n", \
+                i+1, in_groups[i].count, in_groups[i].max, in_groups[i].min);
+        s_filelistnode *temp;
+        for( c=0 ; c<2; c++) // TODO make this genric NUM_CLASSES
+        {
+            temp = in_groups[i].list[c];
+            for ( j=0; j<in_groups[i].count; j++)
+            {
+                printf(" %d ",temp->prop->numopcode); 
+                temp = temp->next;
+            }
+            printf("\n");
+        }
+    }
+}
+
+void normalizeOpcodeFrequency( s_files ** out_filelist) 
+{
+    s_fileProp * temp;
+    temp = (*out_filelist)->list;
+    int numfiles = (*out_filelist)->numFiles;
+    int i=0, j=0;
+    int min=0, max=0;
+    for ( i=0; i<numfiles; i++)
+    {
+        min = temp->min_opcodefreq;
+        max = temp->max_opcodefreq;
+        s_opcodenode *opc = temp->opcodes; 
+        float *nopc = temp->normalized_opcodes;
+        for ( j=0; j<temp->numopcode; j++)
+        {
+            nopc[j] = (float)(opc[j].freq - min)/(float)(max - min);
+            assert( nopc[j] >= 0.0f ); // TODO can decide a threshold, right now checks only for +ve values
+        }
+        temp=temp->next;
+    }
+}
+
+int fillGroupWiseData(
+                        s_group   *in_groups,
+                        float     *out_trainArray,
+                        int       in_num_groups,
+                        int       in_num_opcodes,
+                        float     *out_testArray,
+                        int       *out_class_vect,
+                        int       *out_group_vect
+                      )
+{
+    int mean =0, var =1;
+    int i,j,k,opcindex;
+    float x;
+    int fcount=0;
+    int numtestfiles=0;
+
+    for ( i=0; i<in_num_groups; i++)
+    {
+        for ( j=0; j<2; j++)
+        {
+            s_filelistnode *file = in_groups[i].list[j];
+            int numfiles = in_groups[i].count*2;
+            if( numfiles > 0)
+            {
+                while( file != NULL )
+                {
+                    fcount++;
+                    if ( fcount%3 != 0)
+                    {
+                        for ( k=0; k< file->prop->numopcode; k++)
+                        {
+                            //printf(" %f", file->prop->normalized_opcodes[k]);
+                            x = file->prop->normalized_opcodes[k];
+                            opcindex = file->prop->opcodes[k].id;
+                            float m = x/numfiles;
+                            float v = (m-x)*(m-x)/numfiles;
+                            int row = i*4;
+                            int class = file->prop->classId*2;
+                            assert( m >= 0.0f && v >= 0.0f);
+                            out_trainArray[((row+class+mean)*in_num_opcodes)+opcindex] += m;
+                            out_trainArray[((row+class+var )*in_num_opcodes)+opcindex] += v;
+                        }
+                    }
+                    else // fcount%3 == 0
+                    {
+                        fcount = 0;
+                        for ( k=0; k< file->prop->numopcode; k++)
+                        {
+                            opcindex = file->prop->opcodes[k].id;
+                            x = file->prop->normalized_opcodes[k];
+                            out_testArray[ (numtestfiles*in_num_opcodes) + opcindex] += x;
+                            out_class_vect[numtestfiles] = file->prop->classId;
+                            out_group_vect[numtestfiles] = (file->prop->size)/5;
+                        }
+                            numtestfiles++;
+                    }
+                    file = file->next;
+                }
+            }
+        }
+    }
+    return numtestfiles;
+}
+
+void showGroupWiseProcessedValues( float *out_data_matrix, int in_num_groups, int in_num_opcodes)
+{
+    int mean =0, var =1;
+    int i,j,k;
+    FILE *fp;
+    char *fname = "/tmp/file";
+    fp = fopen(fname, "w");
+
+    printf(" Writing data to file %s\n", fname);
+    for ( i=0; i<in_num_groups*4; i+=4)
+    {
+        for ( j=0; j<in_num_opcodes; j++)
+        {
+            fprintf(fp," %f", out_data_matrix[((i+0+mean)*in_num_opcodes)+j]);
+        }
+        fprintf(fp,"\n");
+        for ( j=0; j<in_num_opcodes; j++)
+        {
+            fprintf(fp," %f", out_data_matrix[((i+0+var)*in_num_opcodes)+j]);
+        } 
+        fprintf(fp,"\n");
+        for ( j=0; j<in_num_opcodes; j++)
+        {
+            fprintf(fp," %f", out_data_matrix[((i+2+mean)*in_num_opcodes)+j]);
+        }
+        fprintf(fp,"\n");
+        for ( j=0; j<in_num_opcodes; j++)
+        {
+            fprintf(fp," %f", out_data_matrix[((i+2+var)*in_num_opcodes)+j]);
+        } 
+        fprintf(fp,"\n");
+    }
+
+    fclose(fp);
 }
