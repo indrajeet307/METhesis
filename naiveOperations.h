@@ -11,4 +11,12 @@ int *createVector(int );
 float *createFloatMatrix( int , int );
 float getAccuracy(int *pmat, int *cvect, int total);
 void rotateMatrix( int *inmat, int *outmat, int inrows, int incolumns);
+void assignClassUsingMeanVarianceData(
+                                       float *in_trainArray,
+                                       float *in_testArray,
+                                       int in_num_groups,
+                                       int in_num_opcodes,
+                                       int in_numtestfiles,
+                                       int *in_group_index,
+                                       int *out_predict_vect );
 #endif //__NAIVEOPS_H_

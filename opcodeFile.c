@@ -445,7 +445,10 @@ int fillGroupWiseData(
     return numtestfiles;
 }
 
-void showGroupWiseProcessedValues( float *out_data_matrix, int in_num_groups, int in_num_opcodes)
+void showGroupWiseProcessedValues( 
+                                    float *out_data_matrix, 
+                                    int in_num_groups, 
+                                    int in_num_opcodes )
 {
     int mean =0, var =1;
     int i,j,k;

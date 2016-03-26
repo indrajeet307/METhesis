@@ -197,7 +197,7 @@ int *createVector(int size)
 float* createFloatMatrix( int rows, int columns)
 {
     float *temp = (float*) calloc( sizeof(float), columns*rows);
-    return temp;
+        return temp;
 }
 
 float getAccuracy(int *pmat, int *cvect, int total)
@@ -250,7 +250,7 @@ float getTheProbablity( float vval, float vmean, float vvar)
     float val1 =  1/sqrt( 2.0* M_PI* vvar);
     float val2 = (vval-vmean)*(vval-vmean)/(2.0*vvar);
     val2 = 1 / exp( val2);
-    result = log( val1*val2);
+    result = log10( val1*val2);
     if( isnan(result) || isinf(result) ) return 0.0;
     return result;
 }
@@ -289,7 +289,15 @@ void assignClassUsingMeanVarianceData(
                 pben += getTheProbablity( in_testArray[j], vmean, vvar);
             }
         }
-        printf(" %f, %f\t", pmal, pben);
-        out_predict_vect[i] = pmal < pben ? 0 : 1;
+        if( pmal > 0 && pben > 0)
+        out_predict_vect[i] = pmal > pben ? 1 : 0;
+        else
+        {
+            if( pmal > 0 ) out_predict_vect[i] = 1;
+            else if ( pben > 0 ) out_predict_vect[i] = 0;
+            else //( pmal < 0 && pben < 0)
+                out_predict_vect[i] = pmal > pben ? 1 : 0;
+
+        }
     }
 }

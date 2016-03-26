@@ -88,15 +88,4 @@ int fillGroupWiseData(
 void showGroupWiseProcessedValues( float *out_data_matrix, 
                                    int in_num_groups, 
                                    int in_num_opcodes );
-
-void assignClassUsingMeanVarianceData(
-                                        float *in_trainArray,
-                                        float *in_testArray,
-                                        int in_num_groups,
-                                        int in_num_opcodes,
-                                        int in_numtestfiles,
-                                        int *in_group_vect,
-                                        int *out_predict_vect
-                                    );
-
 #endif//__OPCHEADER_H_
