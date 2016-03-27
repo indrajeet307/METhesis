@@ -5,6 +5,7 @@
 #include "naiveOperations.h"
 #define NUM_CLASSES 2
 #define NUM_GROUPS 100 // file of size upto 500kb, group of 5kb each
+#define NUM_FEATURES 50 
 int main(int argc, char **argv)
 {
     if ( argc < 4 )
@@ -40,7 +41,8 @@ int main(int argc, char **argv)
     numfiles = adjustCountInEachGroup( groupCount, NUM_GROUPS);
     normalizeOpcodeFrequency( &filelist);
     doGrouping( filelist, groupCount, &grouplist);
-    showGroupWiseStats( grouplist, NUM_GROUPS); 
+    selectFeaturesForEachGroup( &grouplist, NUM_GROUPS, numopcode, NUM_FEATURES);
+    //showGroupWiseStats( grouplist, NUM_GROUPS); 
 
     int numtestfiles=0;
     float *trainArray = createFloatMatrix( NUM_GROUPS*4, numopcode ); // MALWARE BENIGN MEAN VARIANCE  ... NUM_CLASSES * 2
@@ -48,8 +50,12 @@ int main(int argc, char **argv)
     int *class_vect = createVector( numfiles/3 );
     int *group_vect = createVector( numfiles/3 );
     int *predict_group_vect = createVector( numfiles/3 );
+    int **featurelist = (int**) malloc(sizeof(int**)); 
+    createFeatureListForEachGroup( &featurelist, NUM_GROUPS);
+    assignFeatureListForEachGroup( &featurelist, grouplist, NUM_GROUPS);
     fillGroupWiseData( grouplist, trainArray, NUM_GROUPS, numopcode, testArray, class_vect, group_vect );
     showGroupWiseProcessedValues( trainArray, NUM_GROUPS, numopcode );
+    
     //int *testmat = createMatrix( testlist->count, numopcode);
     //int *trainmat = createMatrix( trainlist->count, numopcode);
     ////float*probmat = createFloatMatrix( trainlist->count, numopcode);
@@ -71,8 +77,9 @@ int main(int argc, char **argv)
     ////printIntMatrix( c_test_vect, testlist->count, 1);
     ////printIntMatrix( c_train_vect, trainlist->count, 1);
     ////print( probmat, 2, numopcode);
-    assignClassUsingMeanVarianceData( trainArray,
+ assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
             testArray,
+            featurelist,
             NUM_GROUPS,
             numopcode,
             numfiles/3,

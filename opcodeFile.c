@@ -175,8 +175,9 @@ void initGroups( s_group ** out_groups, int in_count)
     int i;
     for ( i=0; i<in_count; i++)
     {
-        (*out_groups)[i].list[0]=NULL;
-        (*out_groups)[i].list[1]=NULL;
+        (*out_groups)[i].list[0] = NULL;
+        (*out_groups)[i].list[1] = NULL;
+        (*out_groups)[i].features = NULL;
     }     
 }
 
@@ -482,4 +483,112 @@ void showGroupWiseProcessedValues(
     }
 
     fclose(fp);
+}
+
+void resetVector( float * out_vector, int in_num_columns)
+{
+    int i;
+    for ( i<0; i<in_num_columns; i++)
+    {
+        out_vector[i] = 0.0;
+    }
+}
+void selectFeaturesForEachGroup(
+                                 s_group ** out_group,
+                                 int in_num_groups,
+                                 int in_num_opcodes,
+                                 int in_num_features )
+{
+    int i,j,k,l;
+    float **features=(float**) calloc( sizeof( float* ) , 2 );
+    features[0]=(float*) calloc( sizeof( float ) , in_num_opcodes );
+    features[1]=(float*) calloc( sizeof( float ) , in_num_opcodes );
+
+    s_group *grp_ptr;
+    for ( i=0; i<in_num_groups; i++)
+    {
+        grp_ptr = &((*out_group)[i]);
+        if( grp_ptr->count > 0 )
+        {
+            resetVector( features[0], in_num_opcodes);
+            resetVector( features[1], in_num_opcodes);
+            
+            for ( j=0; j< grp_ptr->count; j++)
+            {
+                for ( k=0; k<2; k++) // TODO NUM_CLASSES
+                {
+                   s_filelistnode *file = grp_ptr->list[k];
+                   while( file != NULL )
+                    {
+                        s_fileProp *fileprop_ptr = file->prop;
+                        for ( l=0; l<file->prop->numopcode; l++)
+                        {
+                            int opcindex = fileprop_ptr->opcodes[l].id;
+                            int freq = fileprop_ptr->opcodes[l].freq;
+                            features[k][opcindex] += (freq/grp_ptr->count) ; // TODO divided by number of files in each class
+                        }
+                        file=file->next;
+                    }
+                }
+
+            }
+                setFeatureVector( features, grp_ptr, 2, in_num_opcodes, in_num_features); // TODO NUM_CLASSES
+        }
+    }
+    free( features[0] );
+    free( features[1] );
+    free( features );
+}
+
+
+int cmpopcodenode( const void * opc1, const void *opc2)
+{
+    s_diffnode a = *(s_diffnode const*) opc1;
+    s_diffnode b = *(s_diffnode const*) opc2;
+
+    if( a.diff > b.diff ) return 1;
+    else return 0;
+}
+
+void setFeatureVector( 
+                        float **in_features, 
+                        s_group * out_group , 
+                        int in_num_list, 
+                        int in_num_columns, 
+                        int in_num_features )
+{
+    s_diffnode * diffvector = (s_diffnode*) calloc( sizeof(s_diffnode), in_num_columns);
+    int j=0;
+    for ( j=0; j<in_num_columns; j++)
+    {
+        diffvector[j].id = j;
+        diffvector[j].diff = abs( in_features[0][j] - in_features[1][j] ); // TODO NUM_CLASSES
+    }
+
+    qsort( diffvector, in_num_columns, sizeof(s_opcodenode), cmpopcodenode);
+
+    out_group->features = (int*) calloc( sizeof(int), in_num_columns);
+
+    for ( j=0; j<in_num_features; j++)
+    {
+        int opcindex = diffvector[j].id;
+        out_group->features[ opcindex ] = 1;
+        //printf(" %d", opcindex);
+    }
+    //printf(" \n");
+    free( diffvector );
+}
+void createFeatureListForEachGroup( int ***out_feature_list, int in_num_groups)
+{
+    (*out_feature_list) = (int**) calloc( sizeof(int*), in_num_groups);
+}
+
+void assignFeatureListForEachGroup( int ***out_feature_list, s_group *in_groups, int in_num_groups)
+{
+    int i;
+    for ( i=0; i<in_num_groups; i++)
+    {
+        if( in_groups[i].count > 0 )
+            (*out_feature_list)[i] = in_groups[i].features;
+    }
 }

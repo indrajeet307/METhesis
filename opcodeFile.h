@@ -6,6 +6,12 @@ struct opcodenode{
     int freq;
 };
 typedef struct opcodenode s_opcodenode;
+
+struct diffnode{
+    int id;
+    float diff;
+};
+typedef struct diffnode s_diffnode;
     
 struct fileProp{
     char *name;
@@ -49,6 +55,7 @@ typedef struct filelist s_filelist;
 
 struct group {
     s_filelistnode *list[2];  // TODO make this NUM_CLASSES
+    int *features;
     int count;
     int max;
     int min; 
@@ -88,4 +95,18 @@ int fillGroupWiseData(
 void showGroupWiseProcessedValues( float *out_data_matrix, 
                                    int in_num_groups, 
                                    int in_num_opcodes );
+void selectFeaturesForEachGroup(
+                                 s_group ** out_group,
+                                 int in_num_groups,
+                                 int in_num_opcodes,
+                                 int in_num_features );
+
+void setFeatureVector( 
+                        float **in_features, 
+                        s_group * out_group , 
+                        int in_num_list, 
+                        int in_num_columns, 
+                        int in_num_features );
+void assignFeatureListForEachGroup( int ***out_feature_list, s_group *in_groups, int in_num_groups);
+void createFeatureListForEachGroup( int ***out_feature_list, int in_num_groups);
 #endif//__OPCHEADER_H_

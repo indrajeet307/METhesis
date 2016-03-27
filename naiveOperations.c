@@ -301,3 +301,52 @@ void assignClassUsingMeanVarianceData(
         }
     }
 }
+void assignClassUsingMeanVarianceDataAndFeatureSelection(
+                                       float *in_trainArray,
+                                       float *in_testArray,
+                                       int **in_feature_list,
+                                       int in_num_groups,
+                                       int in_num_opcodes,
+                                       int in_numtestfiles,
+                                       int *in_group_index,
+                                       int *out_predict_vect )
+{
+    int i,j,k;
+    float pmal=0.0, pben=0.0;
+    int mean =0, var =1;
+    float vmean =0, vvar =1;
+    int index=0;
+    int grpindex=0;
+    for ( i=0; i<in_numtestfiles; i++)
+    {
+        grpindex = in_group_index[i];
+        index = grpindex*4;
+        pmal=0.0; 
+        pben=0.0;
+        for ( j=0; j<in_num_opcodes; j++)
+        {
+            if( in_testArray[j] > 0 && in_feature_list[grpindex][j] ) 
+            {
+                vmean = in_trainArray[(index+0+mean)*in_num_opcodes+j];
+                vvar  = in_trainArray[(index+0+var )*in_num_opcodes+j];
+                assert( vmean >= 0.0f && vvar >= 0.0f );
+                pmal += getTheProbablity( in_testArray[j], vmean, vvar);
+
+                vmean = in_trainArray[(index+2+mean)*in_num_opcodes+j];
+                vvar  = in_trainArray[(index+2+var )*in_num_opcodes+j];
+                assert( vmean >= 0.0f && vvar >= 0.0f );
+                pben += getTheProbablity( in_testArray[j], vmean, vvar);
+            }
+        }
+        if( pmal > 0 && pben > 0)
+        out_predict_vect[i] = pmal > pben ? 1 : 0;
+        else
+        {
+            if( pmal > 0 ) out_predict_vect[i] = 1;
+            else if ( pben > 0 ) out_predict_vect[i] = 0;
+            else //( pmal < 0 && pben < 0)
+                out_predict_vect[i] = pmal > pben ? 1 : 0;
+
+        }
+    }
+}

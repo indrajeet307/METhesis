@@ -2,3 +2,4 @@
 /waste/*
 tags
 *.out
+.*.swp
