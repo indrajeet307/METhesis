@@ -3,12 +3,15 @@ BIN=./bin
 all: init main
 
 # implementation with malware data
-main : main.c 
-	gcc -g trie.c naiveOperations.c helper.c opcodeFile.c main.c -o $(BIN)/main.o -lm
+main : opcodefile main.c 
+	gcc -g trie.c naiveOperations.c helper.c $(BIN)/opcodeFile.o main.c -o $(BIN)/main.o -lm
+
+opcodefile : opcodeFile.c 
+	gcc -c opcodeFile.c -o $(BIN)/opcodeFile.o -lm
 
 # implementation with document data
 naive: naive.c 
-	gcc -ggdb -pg trie.c naiveOperations.c helper.c naive.c -o $(BIN)/naive.o -lm
+	gcc -ggdb trie.c naiveOperations.c helper.c naive.c -o $(BIN)/naive.o -lm
 
 init:
 	mkdir -p $(BIN)
@@ -16,4 +19,4 @@ init:
 
 clean: 
 	rm -rf ./bin/
-	rm *.out
+	rm -f *.out
