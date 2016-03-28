@@ -59,7 +59,7 @@ struct group {
     int count;
     int max;
     int min; 
-};				/* ----------  end of struct group  ---------- */
+};			
 typedef struct group s_group;
 
 

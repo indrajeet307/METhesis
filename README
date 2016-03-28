@@ -25,14 +25,14 @@ Approach 1: [ DONE ]
     Drawbacks: Has many nested for loops, huge control divergence
 
 TODO:
-    !!!! Garbage Collection !!!
-    !!!! Documentation !!!
+        !!!! Garbage Collection !!!
+[ WIP ]!!!! Documentation !!!
     !!!! Refactoring !!!
-    1. Grouping
-        Equal number of files in each group
-    2. Mean and Variance
-    3. Testing and Training
-        1:3 ratio
-    4. Feature Selection
-    6. Plot graphs for some configurations
-    7. Plot graphs for memory and timing stuff
+[ DONE ]1. Grouping                         
+            Equal number of files in each group
+[ DONE ]2. Mean and Variance
+[ DONE ]3. Testing and Training
+            1:3 ratio
+[ DONE ]4. Feature Selection
+6. Plot graphs for some configurations
+7. Plot graphs for memory and timing stuff

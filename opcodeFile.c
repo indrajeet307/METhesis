@@ -546,7 +546,7 @@ int cmpopcodenode( const void * opc1, const void *opc2)
     s_diffnode a = *(s_diffnode const*) opc1;
     s_diffnode b = *(s_diffnode const*) opc2;
 
-    if( a.diff > b.diff ) return 1;
+    if( a.diff < b.diff ) return 1; /// sorts in ascending order
     else return 0;
 }
 
@@ -565,6 +565,7 @@ void setFeatureVector(
         diffvector[j].diff = abs( in_features[0][j] - in_features[1][j] ); // TODO NUM_CLASSES
     }
 
+    /// sort in ascending order
     qsort( diffvector, in_num_columns, sizeof(s_opcodenode), cmpopcodenode);
 
     out_group->features = (int*) calloc( sizeof(int), in_num_columns);

@@ -5,7 +5,7 @@
 #include "naiveOperations.h"
 #define NUM_CLASSES 2
 #define NUM_GROUPS 100 // file of size upto 500kb, group of 5kb each
-#define NUM_FEATURES 50 
+#define NUM_FEATURES 100
 int main(int argc, char **argv)
 {
     if ( argc < 4 )
