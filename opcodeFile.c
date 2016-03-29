@@ -10,14 +10,56 @@
 // TODO update all enums with
 // http://stackoverflow.com/questions/1102542/how-to-define-an-enumerated-type-enum-in-c
 enum classId{ BENIGN=0, MALWARE=1, UNKNOWN };
-int getClassId( char * class)
+int getClassId( 
+        char * class
+        )
 {
     if ( strcmp( class, "MALWARE") == 0 ) return MALWARE;
     if ( strcmp( class, "BENIGN") == 0 ) return BENIGN;
     return -1;
 }
 
-s_fileProp* createFileNode( char *filename, int filesize, char *data_type, char *class, int numopcode, int totalopcodes)
+void initFiles( 
+        s_files ** p_files
+        )
+{
+    *p_files = (s_files*) malloc ( sizeof(s_files) );
+    (*p_files)->list = NULL;
+    (*p_files)->garb = NULL;
+}
+
+void initFileList( 
+        s_filelist ** p_list
+        )
+{
+    (*p_list) = (s_filelist*) malloc ( sizeof( s_filelist) ) ;
+    (*p_list)->count = 0;
+    (*p_list)->list = NULL;
+}
+
+void initGroups( 
+        s_group ** out_groups, 
+        int in_count
+        )
+{
+    (*out_groups) = (s_group*) calloc(sizeof(s_group), in_count);
+    int i;
+    for ( i=0; i<in_count; i++)
+    {
+        (*out_groups)[i].list[0] = NULL;
+        (*out_groups)[i].list[1] = NULL;
+        (*out_groups)[i].features = NULL;
+    }     
+}
+
+s_fileProp* createFileNode( 
+        char *filename, 
+        int filesize, 
+        char *data_type, 
+        char *class, 
+        int numopcode, 
+        int totalopcodes
+        )
 {
     s_fileProp* temp = (s_fileProp*) malloc( sizeof(s_fileProp) );
     if( temp == NULL )
@@ -35,7 +77,90 @@ s_fileProp* createFileNode( char *filename, int filesize, char *data_type, char 
     return temp;
 }
 
-int readOpcodeFile( char* fname, s_trie** opcodelist)
+void createFeatureListForEachGroup( 
+        int ***out_feature_list, 
+        int in_num_groups
+        )
+{
+    (*out_feature_list) = (int**) calloc( sizeof(int*), in_num_groups);
+}
+
+void addToFiles(
+        s_files ** p_files, 
+        s_fileProp ** p_fileprop
+        )
+{
+    (*p_files)->numFiles ++;
+    if( (*p_files)->list== NULL )
+    {
+        (*p_files)->list = (*p_fileprop);
+        return;
+    }
+    (*p_fileprop)->next = (*p_files)->list;
+    (*p_files)->list = (*p_fileprop);
+    return;
+}
+
+void addToList( 
+        s_filelist ** p_list, 
+        s_fileProp * p_prop
+        )
+{
+    s_filelistnode *temp = NULL;
+    temp = (s_filelistnode*) malloc (sizeof(s_filelistnode) );
+    temp->prop = p_prop;
+    temp->next = NULL;
+    if( (*p_list)->list == NULL)
+    {
+        (*p_list)->list =temp;
+        (*p_list)->count+=1;
+    }
+    temp->next = (*p_list)->list;
+    (*p_list)->list = temp;
+    (*p_list)->count+=1;
+}
+
+void addToGroup( 
+        s_group ** out_groups, 
+        int in_gropup_index, 
+        s_fileProp *in_fileprop
+        )
+{
+    s_filelistnode *temp,*new_node;
+    s_group *currgrp;
+    int currClassId = in_fileprop->classId;
+
+    currgrp =&( (*out_groups)[in_gropup_index] );
+
+    temp = (*out_groups)[in_gropup_index].list[  currClassId ];
+
+    new_node = (s_filelistnode*) malloc (sizeof(s_filelistnode) );
+    new_node->prop = in_fileprop;
+    new_node->next = NULL;
+
+    if( temp == NULL )
+    {
+        currgrp->list[ currClassId ] = new_node;
+        currgrp->list[ currClassId ]->next  = NULL;
+
+        currgrp->count = 1;
+        currgrp->max = in_fileprop->numopcode;
+        currgrp->min = in_fileprop->numopcode;
+
+        return;
+    }
+    new_node->next = currgrp->list[ currClassId ];
+    currgrp->list[ currClassId ] = new_node;
+
+    currgrp->count += 1;
+    currgrp->max = (in_fileprop->numopcode > currgrp->max) ? in_fileprop->numopcode : currgrp->max ;
+    currgrp->min = (in_fileprop->numopcode < currgrp->min) ? in_fileprop->numopcode : currgrp->min ;
+}
+
+int readOpcodeFile( 
+        char* fname, 
+        s_trie** opcodelist
+        )
 {
     FILE *fp;
     int err;
@@ -64,20 +189,12 @@ int readOpcodeFile( char* fname, s_trie** opcodelist)
     return numopcodes;
 }
 
-void addToFiles(s_files ** p_files, s_fileProp ** p_fileprop)
-{
-    (*p_files)->numFiles ++;
-    if( (*p_files)->list== NULL )
-    {
-        (*p_files)->list = (*p_fileprop);
-        return;
-    }
-    (*p_fileprop)->next = (*p_files)->list;
-    (*p_files)->list = (*p_fileprop);
-    return;
-}
-
-int readCSVFile( char* in_filename, int in_numopcode, s_files ** out_fillist, int *out_groupcount)
+int readCSVFile( 
+        char* in_filename, 
+        int in_numopcode, 
+        s_files ** out_fillist, 
+        int *out_groupcount
+        )
 {
     FILE *fp;
     int err;
@@ -91,11 +208,11 @@ int readCSVFile( char* in_filename, int in_numopcode, s_files ** out_fillist, in
         return -1;
     }
     char  *filename=NULL;
-    char  *freq     ;//= (char*) malloc (sizeof(char)*16);
-    char  *class    ;//= (char*) malloc (sizeof(char)*16);
-    char  *data_set ;//= (char*) malloc (sizeof(char)*16);
-    char  *filesize ;//= (char*) malloc (sizeof(char)*8);
-    char  *numopc   ;//= (char*) malloc (sizeof(char)*8);
+    char  *freq     ;
+    char  *class    ;
+    char  *data_set ;
+    char  *filesize ;
+    char  *numopc   ;
     int    numopcodes=0;
     short int fcount=0;
 
@@ -155,63 +272,29 @@ int readCSVFile( char* in_filename, int in_numopcode, s_files ** out_fillist, in
     return numfiles;
 }
 
-void initFiles( s_files ** p_files)
-{
-    *p_files = (s_files*) malloc ( sizeof(s_files) );
-    (*p_files)->list = NULL;
-    (*p_files)->garb = NULL;
-}
-
-void initFileList( s_filelist ** p_list)
-{
-    (*p_list) = (s_filelist*) malloc ( sizeof( s_filelist) ) ;
-    (*p_list)->count = 0;
-    (*p_list)->list = NULL;
-}
-
-void initGroups( s_group ** out_groups, int in_count)
-{
-    (*out_groups) = (s_group*) calloc(sizeof(s_group), in_count);
-    int i;
-    for ( i=0; i<in_count; i++)
-    {
-        (*out_groups)[i].list[0] = NULL;
-        (*out_groups)[i].list[1] = NULL;
-        (*out_groups)[i].features = NULL;
-    }     
-}
-
-void cleanUp( s_garbage * p_garbage)
+void cleanUp( 
+        s_garbage * p_garbage
+        )
 {
 }
 
-void deleteFiles( s_files ** p_files)
+void deleteFiles( 
+        s_files ** p_files
+        )
 {
     cleanUp( (*p_files)->garb );
     free( *p_files );
     (*p_files) = NULL;
 }
 
-void showFiles( s_files * p_files)
-{
-    s_fileProp * temp = p_files->list;
-    s_opcodenode *opcptr = NULL;
-    int count = p_files->numFiles;
-    while ( temp != NULL)
-    {
-        printf("%d %s %d\n", count--, temp->name, temp->numopcode);
-        opcptr = temp->opcodes;
-        int i=0;
-        while( i<temp->numopcode)
-        {
-            printf( " %d=%d\t", opcptr[i].id, opcptr[i].freq);
-            i++;
-        }
-        temp = temp->next;
-    }
-}
 
-void fillTheMatrix( s_files ** p_files, int * p_mat, int * p_cvect, int rows, int columns)
+void fillTheMatrix( 
+        s_files ** p_files, 
+        int * p_mat, 
+        int * p_cvect, 
+        int rows, 
+        int columns
+        )
 {
     s_fileProp * list = (*p_files)->list;
     int i=0,j=0;
@@ -227,7 +310,13 @@ void fillTheMatrix( s_files ** p_files, int * p_mat, int * p_cvect, int rows, in
     }
 }
 
-void fillTheMatrixFromList( s_filelist ** p_files, int * p_mat, int * p_cvect, int rows, int columns)
+void fillTheMatrixFromList( 
+        s_filelist ** p_files, 
+        int * p_mat, 
+        int * p_cvect, 
+        int rows, 
+        int columns
+        )
 {
     s_filelistnode * list = (*p_files)->list;
     int i=0,j=0;
@@ -243,23 +332,11 @@ void fillTheMatrixFromList( s_filelist ** p_files, int * p_mat, int * p_cvect, i
     }
 }
 
-void addToList( s_filelist ** p_list, s_fileProp * p_prop)
-{
-    s_filelistnode *temp = NULL;
-    temp = (s_filelistnode*) malloc (sizeof(s_filelistnode) );
-    temp->prop = p_prop;
-    temp->next = NULL;
-    if( (*p_list)->list == NULL)
-    {
-        (*p_list)->list =temp;
-        (*p_list)->count+=1;
-    }
-    temp->next = (*p_list)->list;
-    (*p_list)->list = temp;
-    (*p_list)->count+=1;
-}
 
-int adjustCountInEachGroup(int* out_groupcount, int num_groups)
+int adjustCountInEachGroup(
+        int* out_groupcount, 
+        int num_groups
+        )
 {
     int i;
     int count=0;
@@ -278,6 +355,7 @@ int adjustCountInEachGroup(int* out_groupcount, int num_groups)
     }
     return count*2;
 }
+
 /*
  *	@DESC   : Does grouping for only 2 classes
  *          : TODO make it genric for n classes
@@ -285,7 +363,11 @@ int adjustCountInEachGroup(int* out_groupcount, int num_groups)
  *	@RETURN : What does it return?
  *	
  */
-void doGrouping( s_files* in_files, int* in_groupcount, s_group ** out_groups)
+void doGrouping( 
+        s_files* in_files, 
+        int* in_groupcount, 
+        s_group ** out_groups
+        )
 {
     s_fileProp *temp = in_files->list;
     int groupIndex=0;
@@ -306,61 +388,11 @@ void doGrouping( s_files* in_files, int* in_groupcount, s_group ** out_groups)
     }
 }
 
-void addToGroup( s_group ** out_groups, int in_gropup_index, s_fileProp *in_fileprop)
-{
-    s_filelistnode *temp,*new_node;
-    s_group *currgrp;
-    int currClassId = in_fileprop->classId;
 
-    currgrp =&( (*out_groups)[in_gropup_index] );
 
-    temp = (*out_groups)[in_gropup_index].list[  currClassId ];
-
-    new_node = (s_filelistnode*) malloc (sizeof(s_filelistnode) );
-    new_node->prop = in_fileprop;
-    new_node->next = NULL;
-
-    if( temp == NULL )
-    {
-        currgrp->list[ currClassId ] = new_node;
-        currgrp->list[ currClassId ]->next  = NULL;
-
-        currgrp->count = 1;
-        currgrp->max = in_fileprop->numopcode;
-        currgrp->min = in_fileprop->numopcode;
-
-        return;
-    }
-    new_node->next = currgrp->list[ currClassId ];
-    currgrp->list[ currClassId ] = new_node;
-
-    currgrp->count += 1;
-    currgrp->max = (in_fileprop->numopcode > currgrp->max) ? in_fileprop->numopcode : currgrp->max ;
-    currgrp->min = (in_fileprop->numopcode < currgrp->min) ? in_fileprop->numopcode : currgrp->min ;
-}
-
-void showGroupWiseStats( s_group * in_groups , int in_num_groups)
-{
-    int i,j,c;
-    for( i=0; i< in_num_groups; i++)
-    {
-        printf(" Group %d, has %d files, max opcode count = %d, min opcode count = %d.\n", \
-                i+1, in_groups[i].count, in_groups[i].max, in_groups[i].min);
-        s_filelistnode *temp;
-        for( c=0 ; c<2; c++) // TODO make this genric NUM_CLASSES
-        {
-            temp = in_groups[i].list[c];
-            for ( j=0; j<in_groups[i].count; j++)
-            {
-                printf(" %d ",temp->prop->numopcode); 
-                temp = temp->next;
-            }
-            printf("\n");
-        }
-    }
-}
-
-void normalizeOpcodeFrequency( s_files ** out_filelist) 
+void normalizeOpcodeFrequency( 
+        s_files ** out_filelist
+        ) 
 {
     s_fileProp * temp;
     temp = (*out_filelist)->list;
@@ -383,14 +415,14 @@ void normalizeOpcodeFrequency( s_files ** out_filelist)
 }
 
 int fillGroupWiseData(
-                        s_group   *in_groups,
-                        float     *out_trainArray,
-                        int       in_num_groups,
-                        int       in_num_opcodes,
-                        float     *out_testArray,
-                        int       *out_class_vect,
-                        int       *out_group_vect
-                      )
+        s_group   *in_groups,
+        float     *out_trainArray,
+        int       in_num_groups,
+        int       in_num_opcodes,
+        float     *out_testArray,
+        int       *out_class_vect,
+        int       *out_group_vect
+        )
 {
     int mean =0, var =1;
     int i,j,k,opcindex;
@@ -436,7 +468,7 @@ int fillGroupWiseData(
                             out_class_vect[numtestfiles] = file->prop->classId;
                             out_group_vect[numtestfiles] = (file->prop->size)/5;
                         }
-                            numtestfiles++;
+                        numtestfiles++;
                     }
                     file = file->next;
                 }
@@ -446,10 +478,174 @@ int fillGroupWiseData(
     return numtestfiles;
 }
 
+
+void resetVector( 
+        float * out_vector, 
+        int in_num_columns
+        )
+{
+    int i;
+    for ( i<0; i<in_num_columns; i++)
+    {
+        out_vector[i] = 0.0;
+    }
+}
+
+void selectFeaturesForEachGroup(
+        s_group ** out_group,
+        int in_num_groups,
+        int in_num_opcodes,
+        int in_num_features 
+        )
+{
+    int i,j,k,l;
+    float **features=(float**) calloc( sizeof( float* ) , 2 );
+    features[0]=(float*) calloc( sizeof( float ) , in_num_opcodes );
+    features[1]=(float*) calloc( sizeof( float ) , in_num_opcodes );
+
+    s_group *grp_ptr;
+    for ( i=0; i<in_num_groups; i++)
+    {
+        grp_ptr = &((*out_group)[i]);
+        if( grp_ptr->count > 0 )
+        {
+            resetVector( features[0], in_num_opcodes);
+            resetVector( features[1], in_num_opcodes);
+
+            for ( j=0; j< grp_ptr->count; j++)
+            {
+                for ( k=0; k<2; k++) // TODO NUM_CLASSES
+                {
+                    s_filelistnode *file = grp_ptr->list[k];
+                    while( file != NULL )
+                    {
+                        s_fileProp *fileprop_ptr = file->prop;
+                        for ( l=0; l<file->prop->numopcode; l++)
+                        {
+                            int opcindex = fileprop_ptr->opcodes[l].id;
+                            int freq = fileprop_ptr->opcodes[l].freq;
+                            features[k][opcindex] += (freq/grp_ptr->count) ; // TODO divided by number of files in each class
+                        }
+                        file=file->next;
+                    }
+                }
+
+            }
+            setFeatureVector( features, grp_ptr, 2, in_num_opcodes, in_num_features); // TODO NUM_CLASSES
+        }
+    }
+    free( features[0] );
+    free( features[1] );
+    free( features );
+}
+
+int cmpopcodenode( 
+        const void * opc1, 
+        const void *opc2
+        )
+{
+    s_diffnode a = *(s_diffnode const*) opc1;
+    s_diffnode b = *(s_diffnode const*) opc2;
+
+    if( a.diff < b.diff ) return 1; /// sorts in ascending order
+    else return 0;
+}
+
+void setFeatureVector( 
+        float **in_features, 
+        s_group * out_group , 
+        int in_num_list, 
+        int in_num_columns, 
+        int in_num_features 
+        )
+{
+    s_diffnode * diffvector = (s_diffnode*) calloc( sizeof(s_diffnode), in_num_columns);
+    int j=0;
+    for ( j=0; j<in_num_columns; j++)
+    {
+        diffvector[j].id = j;
+        diffvector[j].diff = abs( in_features[0][j] - in_features[1][j] ); // TODO NUM_CLASSES
+    }
+
+    /// sort in ascending order
+    qsort( diffvector, in_num_columns, sizeof(s_opcodenode), cmpopcodenode);
+
+    out_group->features = (int*) calloc( sizeof(int), in_num_columns);
+
+    for ( j=0; j<in_num_features; j++)
+    {
+        int opcindex = diffvector[j].id;
+        out_group->features[ opcindex ] = 1;
+        //printf(" %d", opcindex);
+    }
+    //printf(" \n");
+    free( diffvector );
+}
+
+void assignFeatureListForEachGroup( 
+        int ***out_feature_list, 
+        s_group *in_groups, 
+        int in_num_groups
+        )
+{
+    int i;
+    for ( i=0; i<in_num_groups; i++)
+    {
+        if( in_groups[i].count > 0 )
+            (*out_feature_list)[i] = in_groups[i].features;
+    }
+}
+
+void showFiles( 
+        s_files * p_files 
+        )
+{
+    s_fileProp *temp = p_files->list;
+    s_opcodenode *opcptr = NULL;
+    int count = p_files->numFiles;
+    while ( temp != NULL)
+    {
+        printf("%d %s %d\n", count--, temp->name, temp->numopcode);
+        opcptr = temp->opcodes;
+        int i=0;
+        while( i<temp->numopcode)
+        {
+            printf( " %d=%d\t", opcptr[i].id, opcptr[i].freq);
+            i++;
+        }
+        temp = temp->next;
+    }
+}
+
+void showGroupWiseStats( 
+        s_group * in_groups , 
+        int in_num_groups
+        )
+{
+    int i,j,c;
+    for( i=0; i< in_num_groups; i++)
+    {
+        printf(" Group %d, has %d files, max opcode count = %d, min opcode count = %d.\n", \
+                i+1, in_groups[i].count, in_groups[i].max, in_groups[i].min);
+        s_filelistnode *temp;
+        for( c=0 ; c<2; c++) // TODO make this genric NUM_CLASSES
+        {
+            temp = in_groups[i].list[c];
+            for ( j=0; j<in_groups[i].count; j++)
+            {
+                printf(" %d ",temp->prop->numopcode); 
+                temp = temp->next;
+            }
+            printf("\n");
+        }
+    }
+}
+
 void showGroupWiseProcessedValues( 
-                                    float *out_data_matrix, 
-                                    int in_num_groups, 
-                                    int in_num_opcodes )
+        float *out_data_matrix, 
+        int in_num_groups, 
+        int in_num_opcodes
+        )
 {
     int mean =0, var =1;
     int i,j,k;
@@ -483,113 +679,4 @@ void showGroupWiseProcessedValues(
     }
 
     fclose(fp);
-}
-
-void resetVector( float * out_vector, int in_num_columns)
-{
-    int i;
-    for ( i<0; i<in_num_columns; i++)
-    {
-        out_vector[i] = 0.0;
-    }
-}
-void selectFeaturesForEachGroup(
-                                 s_group ** out_group,
-                                 int in_num_groups,
-                                 int in_num_opcodes,
-                                 int in_num_features )
-{
-    int i,j,k,l;
-    float **features=(float**) calloc( sizeof( float* ) , 2 );
-    features[0]=(float*) calloc( sizeof( float ) , in_num_opcodes );
-    features[1]=(float*) calloc( sizeof( float ) , in_num_opcodes );
-
-    s_group *grp_ptr;
-    for ( i=0; i<in_num_groups; i++)
-    {
-        grp_ptr = &((*out_group)[i]);
-        if( grp_ptr->count > 0 )
-        {
-            resetVector( features[0], in_num_opcodes);
-            resetVector( features[1], in_num_opcodes);
-            
-            for ( j=0; j< grp_ptr->count; j++)
-            {
-                for ( k=0; k<2; k++) // TODO NUM_CLASSES
-                {
-                   s_filelistnode *file = grp_ptr->list[k];
-                   while( file != NULL )
-                    {
-                        s_fileProp *fileprop_ptr = file->prop;
-                        for ( l=0; l<file->prop->numopcode; l++)
-                        {
-                            int opcindex = fileprop_ptr->opcodes[l].id;
-                            int freq = fileprop_ptr->opcodes[l].freq;
-                            features[k][opcindex] += (freq/grp_ptr->count) ; // TODO divided by number of files in each class
-                        }
-                        file=file->next;
-                    }
-                }
-
-            }
-                setFeatureVector( features, grp_ptr, 2, in_num_opcodes, in_num_features); // TODO NUM_CLASSES
-        }
-    }
-    free( features[0] );
-    free( features[1] );
-    free( features );
-}
-
-
-int cmpopcodenode( const void * opc1, const void *opc2)
-{
-    s_diffnode a = *(s_diffnode const*) opc1;
-    s_diffnode b = *(s_diffnode const*) opc2;
-
-    if( a.diff < b.diff ) return 1; /// sorts in ascending order
-    else return 0;
-}
-
-void setFeatureVector( 
-                        float **in_features, 
-                        s_group * out_group , 
-                        int in_num_list, 
-                        int in_num_columns, 
-                        int in_num_features )
-{
-    s_diffnode * diffvector = (s_diffnode*) calloc( sizeof(s_diffnode), in_num_columns);
-    int j=0;
-    for ( j=0; j<in_num_columns; j++)
-    {
-        diffvector[j].id = j;
-        diffvector[j].diff = abs( in_features[0][j] - in_features[1][j] ); // TODO NUM_CLASSES
-    }
-
-    /// sort in ascending order
-    qsort( diffvector, in_num_columns, sizeof(s_opcodenode), cmpopcodenode);
-
-    out_group->features = (int*) calloc( sizeof(int), in_num_columns);
-
-    for ( j=0; j<in_num_features; j++)
-    {
-        int opcindex = diffvector[j].id;
-        out_group->features[ opcindex ] = 1;
-        //printf(" %d", opcindex);
-    }
-    //printf(" \n");
-    free( diffvector );
-}
-void createFeatureListForEachGroup( int ***out_feature_list, int in_num_groups)
-{
-    (*out_feature_list) = (int**) calloc( sizeof(int*), in_num_groups);
-}
-
-void assignFeatureListForEachGroup( int ***out_feature_list, s_group *in_groups, int in_num_groups)
-{
-    int i;
-    for ( i=0; i<in_num_groups; i++)
-    {
-        if( in_groups[i].count > 0 )
-            (*out_feature_list)[i] = in_groups[i].features;
-    }
 }

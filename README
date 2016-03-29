@@ -9,7 +9,7 @@ Why are we taking mean and variance ??
 
 
 IMPLEMENTATION APPROACHES
-[ PARTIAL ] FOR A) Generating the probability matrix
+[ DONE ] FOR A) Generating the probability matrix
 Approach 1: [ DONE ]
     #threads = #files
     each thread iterates over each opcode and contributes to the opcode of class to which
@@ -36,3 +36,6 @@ TODO:
 [ DONE ]4. Feature Selection
 6. Plot graphs for some configurations
 7. Plot graphs for memory and timing stuff
+[ WIP ]8. Parallel Implementation of class prediction
+9. Parallel Implementation of feature selection
+10.Parallel Implementation for calculating mean and variance

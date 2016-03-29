@@ -1,3 +1,4 @@
+/*! \file opcodeFile.h */
 #include "trie.h"
 #ifndef __OPCHEADER_H_
 #define __OPCHEADER_H_
@@ -12,7 +13,7 @@ struct diffnode{
     float diff;
 };
 typedef struct diffnode s_diffnode;
-    
+
 struct fileProp{
     char *name;
     int numopcode;
@@ -79,34 +80,48 @@ void doGrouping( s_files* in_files, int* in_groupcount, s_group ** out_groups);
 void addToGroup( s_group ** out_groups, int in_gropup_index, s_fileProp *in_fileprop);
 void showGroupWiseStats( s_group * in_groups , int in_num_groups);
 void initGroups( s_group ** out_groups, 
-                 int count);
+        int count);
 void normalizeOpcodeFrequency( s_files** out_filelist );
 
 int fillGroupWiseData(
-                      s_group   *in_groups,
-                      float     *out_trainArray,
-                      int        in_num_groups,
-                      int        in_num_opcodes,
-                      float     *out_testArray,
-                      int       *out_class_vect,
-                      int       *out_group_vect
-                      );
+        s_group   *in_groups,
+        float     *out_trainArray,
+        int        in_num_groups,
+        int        in_num_opcodes,
+        float     *out_testArray,
+        int       *out_class_vect,
+        int       *out_group_vect
+        );
 
-void showGroupWiseProcessedValues( float *out_data_matrix, 
-                                   int in_num_groups, 
-                                   int in_num_opcodes );
+void showGroupWiseProcessedValues( 
+        float *out_data_matrix, 
+        int in_num_groups, 
+        int in_num_opcodes 
+        );
+
 void selectFeaturesForEachGroup(
-                                 s_group ** out_group,
-                                 int in_num_groups,
-                                 int in_num_opcodes,
-                                 int in_num_features );
+        s_group ** out_group,
+        int in_num_groups,
+        int in_num_opcodes,
+        int in_num_features
+        );
 
 void setFeatureVector( 
-                        float **in_features, 
-                        s_group * out_group , 
-                        int in_num_list, 
-                        int in_num_columns, 
-                        int in_num_features );
-void assignFeatureListForEachGroup( int ***out_feature_list, s_group *in_groups, int in_num_groups);
-void createFeatureListForEachGroup( int ***out_feature_list, int in_num_groups);
+        float **in_features, 
+        s_group * out_group , 
+        int in_num_list, 
+        int in_num_columns, 
+        int in_num_features 
+        );
+
+void assignFeatureListForEachGroup( 
+        int ***out_feature_list, 
+        s_group *in_groups, 
+        int in_num_groups
+        );
+
+void createFeatureListForEachGroup( 
+        int ***out_feature_list, 
+        int in_num_groups
+        );
 #endif//__OPCHEADER_H_
