@@ -1,15 +1,65 @@
 /*! \file naiveOperations.h */
 #ifndef __NAIVEOPS_H_
 #define __NAIVEOPS_H_
-int createClassWiseData( int *, int *, int , int , int );
-int createProbablityMatrix( int *, float *, int*,float*,int , int , int , int );
-int normalize( int *, float*, int , int );
-void print( float *, int , int );
-void printIntMatrix( int *, int , int );
-void assignClass( int *, float *,float*, int *, int , int , int );
-int *createMatrix( int , int );
-int *createVector(int );
-float *createFloatMatrix( int , int );
+
+void assignClass( 
+        int *in_mat,     /*!< [in] input matrix */
+        float *in_prob,     /*!< [in] probability matrix */
+        float *in_cprob,     /*!< [in] class probability matrix */
+        int *out_pridict,     /*!< [out] predicted class */
+        int in_rows,     /*!< [in] number of input rows */
+        int in_classes,     /*!< [in] number of classes */
+        int in_columns    /*!< [in] number of columns */
+        );
+
+int normalize( 
+        int *in_mat,     /*!< [in] input matrix */
+        float *out_mat,     /*!< [out] output matrix */
+        int in_rows,     /*!< [in] number of rows in the input matrix */
+        int in_columns    /*!< [in] number of columns in the output matrix */
+        );
+
+int createClassWiseData( 
+        int *in_mat,     /*!< [in] input matrix */
+        int *out_mat,     /*!< [out] output matrix */
+        int in_rows,     /*!< [in] number of rows in input matrix */
+        int in_columns,     /*!< [in] number of columns in input matrix */
+        int in_outrows    /*!< [in] number of rows in output matrix */
+        );
+
+int createProbablityMatrix( 
+        int     *in_inmat,    /*!< [in] input matrix */
+        float   *out_outmat,    /*!< [out] output matrix */
+        int     *in_cvect,    /*!< [in] class vector */
+        float   *out_cprob,    /*!< [out] probability of each class */
+        int     in_inrows,    /*!< [in] number of rows in input matrix */
+        int     in_incolumns,    /*!< [in] number of columns in input matrix */
+        int     in_outrows,    /*!< [in] number of rows in output matrix */
+        int     in_outcolumns    /*!< [in] number of columns in output matrix */
+        );
+
+void printFloatMatrix(
+        float *in_mat,     /*!< [in] pointer to the matrix */
+        int in_rows,     /*!< [in] number of rows in the matrix */
+        int in_columns    /*!< [in] number of columns in the matrix */
+        );
+
+void printIntMatrix(
+        int *in_mat,     /*!< [in] pointer to the matrix */
+        int in_rows,     /*!< [in] number of rows in the matrix */
+        int in_columns    /*!< [in] number of columns in the matrix */
+        );
+int *createVector(
+        int in_size      /*!< [in] length of the vector */
+        );
+float* createFloatMatrix(
+        int in_rows,     /*!< [in] number of rows in the matrix */
+        int in_columns    /*!< [in] number of columns in the matrix */
+        );
+int* createIntMatrix( 
+        int in_rows,     /*!< [in] number of rows in the matrix */
+        int in_columns    /*!< [in] number of columns in the matrix */
+        );
 float getAccuracy( 
         int *in_pmat,   /*!< [in] predicated class vector */
         int *in_cvect,  /*!< [in] actual class vector */
