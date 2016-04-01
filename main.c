@@ -77,7 +77,16 @@ int main(int argc, char **argv)
     ////printIntMatrix( c_test_vect, testlist->count, 1);
     ////printIntMatrix( c_train_vect, trainlist->count, 1);
     ////print( probmat, 2, numopcode);
- assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
+    assignClassUsingMeanVarianceData(
+        trainArray,
+        testArray,
+        NUM_GROUPS,
+        numopcode,
+        numtestfiles,
+        group_vect,
+        predict_group_vect
+        );
+ /*assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
             testArray,
             featurelist,
             NUM_GROUPS,
@@ -85,7 +94,7 @@ int main(int argc, char **argv)
             numfiles/3,
             group_vect,
             predict_group_vect
-            );
+            );*/
     ////print( cprob, 2, 1);
     printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, predict_group_vect, numfiles/3));
 

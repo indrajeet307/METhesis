@@ -71,6 +71,12 @@ void rotateMatrix(
         int in_rows,     /*!< [in] number of rows in input matrix */
         int in_columns   /*!< [in] number of columns in output matrix */
         );
+void rotateMatrixF( 
+        float *in_mat,     /*!< [in] input matrix */
+        float *out_mat,    /*!< [out] output matrix */
+        int in_rows,     /*!< [in] number of rows in input matrix */
+        int in_columns   /*!< [in] number of columns in output matrix */
+        );
 float getTheProbablity( 
         float in_vval,  /*!< [in] x as in above formulae */
         float in_vmean, /*!< [in] mean value */

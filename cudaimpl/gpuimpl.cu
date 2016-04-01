@@ -72,6 +72,10 @@ int main(int argc, char**argv)
     //free( groupCount );
     float *d_trainArray=NULL, *d_testArray; 
     int *d_group_vect, *d_predict_vect, *H_predict_vect;
+    float *rotated_test_matrix;
+
+    rotated_test_matrix = createFloatMatrix( numtestfiles, numopcode);
+    rotateMatrixF( testArray, rotated_test_matrix, numtestfiles, numopcode);
 
     createDeviceMatrixF( &d_trainArray, NUM_GROUPS*4, numopcode);
     createDeviceMatrixF( &d_testArray, numtestfiles, numopcode);
@@ -80,7 +84,7 @@ int main(int argc, char**argv)
     createDeviceMatrixI( &d_predict_vect, numtestfiles, 1);
 
     transferToDeviceF( trainArray, d_trainArray, NUM_GROUPS*4* numopcode);  
-    transferToDeviceF( testArray, d_testArray, numtestfiles* numopcode);  
+    transferToDeviceF( rotated_test_matrix, d_testArray, numtestfiles* numopcode);  
 
     transferToDeviceI( group_vect, d_group_vect, numtestfiles );  
 

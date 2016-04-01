@@ -408,6 +408,24 @@ void rotateMatrix(
         }
     }
 }
+void rotateMatrixF( 
+        float *in_mat,     /*!< [in] input matrix */
+        float *out_mat,    /*!< [out] output matrix */
+        int in_rows,     /*!< [in] number of rows in input matrix */
+        int in_columns   /*!< [in] number of columns in output matrix */
+        )
+{
+    int outcolumns=in_rows;
+    int i,j;
+
+    for ( i=0; i<in_rows; i++)
+    {
+        for ( j=0;j<in_columns;j++)
+        {
+            out_mat[ j*outcolumns + i ] = in_mat[ i*in_columns+j ];
+        }
+    }
+}
 
 /*!
  *	\brief Gives the probablity for the current in_val
