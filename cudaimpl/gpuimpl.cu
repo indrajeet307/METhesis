@@ -50,6 +50,7 @@ int main(int argc, char**argv)
     int *group_vect = createVector( numtestfiles );
     int *predict_vect = createVector( numtestfiles );
     int **featurelist = (int**) malloc(sizeof(int**)); 
+    createFeatureListForEachGroup( &featurelist, NUM_GROUPS );
 
     fillGroupWiseData( grouplist, trainArray, NUM_GROUPS, numopcode, testArray, class_vect, group_vect );
 
@@ -72,31 +73,30 @@ int main(int argc, char**argv)
     float *d_trainArray=NULL, *d_testArray; 
     int *d_group_vect, *d_predict_vect, *H_predict_vect;
 
-    //createDeviceMatrixF( &d_trainArray, NUM_GROUPS, numopcode);
-    //createDeviceMatrixF( &d_trainArray, 10, 10);
-    //createDeviceMatrixF( &d_testArray, numtestfiles, numopcode);
+    createDeviceMatrixF( &d_trainArray, NUM_GROUPS*4, numopcode);
+    createDeviceMatrixF( &d_testArray, numtestfiles, numopcode);
 
-    //createDeviceMatrixI( &d_group_vect, numtestfiles, 1);
-    //createDeviceMatrixI( &d_predict_vect, numtestfiles, 1);
+    createDeviceMatrixI( &d_group_vect, numtestfiles, 1);
+    createDeviceMatrixI( &d_predict_vect, numtestfiles, 1);
 
-    //transferToDeviceF( trainArray, d_trainArray, NUM_GROUPS*4* numopcode);  
-    //transferToDeviceF( testArray, d_testArray, NUM_GROUPS*4* numopcode);  
+    transferToDeviceF( trainArray, d_trainArray, NUM_GROUPS*4* numopcode);  
+    transferToDeviceF( testArray, d_testArray, numtestfiles* numopcode);  
 
-    //transferToDeviceI( group_vect, d_group_vect, NUM_GROUPS*4* numopcode);  
+    transferToDeviceI( group_vect, d_group_vect, numtestfiles );  
 
     //// TODO convert featurelist to matrix, currently it is pointer to pointers stuff
 
-    //passignClassUsingMeanVarianceData( d_trainArray, d_testArray, NUM_GROUPS, numopcode, numtestfiles, d_group_vect, d_predict_vect);
-    assignClassUsingMeanVarianceData( trainArray, testArray, NUM_GROUPS, numopcode, numtestfiles, group_vect, predict_vect);
+    passignClassUsingMeanVarianceData( d_trainArray, d_testArray, NUM_GROUPS, numopcode, numtestfiles, d_group_vect, d_predict_vect);
+    //assignClassUsingMeanVarianceData( trainArray, testArray, NUM_GROUPS, numopcode, numtestfiles, group_vect, predict_vect);
     ///* assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
     //        testArray, featurelist, NUM_GROUPS, numopcode,
     //        numtestfiles, group_vect, predict_vect
     //        ); */
     //////print( cprob, 2, 1);
-    //H_predict_vect = createVector( numtestfiles );
-    //transferFromDeviceI( H_predict_vect, d_predict_vect, numtestfiles);
+    H_predict_vect = createVector( numtestfiles );
+    transferFromDeviceI( H_predict_vect, d_predict_vect, numtestfiles);
     printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, predict_vect, numtestfiles));
-    //printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, H_predict_vect, numtestfiles));
+    printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, H_predict_vect, numtestfiles));
 
     //deleteTrie( &opcodelist ); 
     //free(testmat);
@@ -104,11 +104,11 @@ int main(int argc, char**argv)
     //free(c_train_vect);
     //free(c_test_vect );
 
- free ( trainArray );
- free ( testArray );
- free ( class_vect );
- free ( group_vect );
- free ( predict_vect  );
+    free ( trainArray );
+    free ( testArray );
+    free ( class_vect );
+    free ( group_vect );
+    free ( predict_vect  );
 
  return 0;
 }
