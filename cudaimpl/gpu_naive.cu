@@ -128,8 +128,8 @@ void pnaiveTrain( int *inmat, int *inclass, int *class_wise, float *outmat, floa
 __global__
 
 void naiveTestKernel( float *in_probmat, float *in_class_prob, int*in_test_mat,
-                 int in_test_mat_columns, int in_test_mat_rows, int in_probmat_rows, 
-                 int in_probmat_columns, int *out_assigned_class)
+        int in_test_mat_columns, int in_test_mat_rows, int in_probmat_rows, 
+        int in_probmat_columns, int *out_assigned_class)
 {
     int index = blockIdx.x*BLOCK_WIDTH+threadIdx.x;
     float cls[2];
@@ -143,7 +143,7 @@ void naiveTestKernel( float *in_probmat, float *in_class_prob, int*in_test_mat,
                 for ( int j=0; j<in_probmat_rows; j++)
                 {
                     cls[j] += (float)in_test_mat[ i*in_test_mat_columns+index]*in_probmat[
-                    j*in_probmat_columns+ i];
+                        j*in_probmat_columns+ i];
                 }
             }
         }
@@ -152,8 +152,8 @@ void naiveTestKernel( float *in_probmat, float *in_class_prob, int*in_test_mat,
 }
 
 void pnaiveTest( float *in_probmat, float *in_class_prob, int*in_test_mat,
-                 int in_test_mat_columns, int in_test_mat_rows, int in_probmat_rows, 
-                 int in_probmat_columns, int *out_assigned_class)
+        int in_test_mat_columns, int in_test_mat_rows, int in_probmat_rows, 
+        int in_probmat_columns, int *out_assigned_class)
 {
     dim3 gridProp( ceil(in_test_mat_columns/BLOCK_WIDTH)+1,1,1);
     dim3 blockProp(BLOCK_WIDTH,1,1);
@@ -161,11 +161,102 @@ void pnaiveTest( float *in_probmat, float *in_class_prob, int*in_test_mat,
     printf(" Running %.0lf Blocks.\n",ceil(in_test_mat_columns/BLOCK_WIDTH));
     err = cudaSuccess;
     naiveTestKernel<<<gridProp,blockProp>>>(in_probmat, in_class_prob, in_test_mat,
-    in_test_mat_columns, in_test_mat_rows, in_probmat_rows, 
-    in_probmat_columns, out_assigned_class);
+            in_test_mat_columns, in_test_mat_rows, in_probmat_rows, 
+            in_probmat_columns, out_assigned_class);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "%s, %d.\n %s.", __FILE__, __LINE__, cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
+}
+
+__device__
+float getTheProbablityD( 
+        float in_vval,  /*!< [in] x as in above formulae */
+        float in_vmean, /*!< [in] mean value */
+        float in_vvar   /*!< [in] variance value */
+        )
+{
+
+    float result=0.0;
+    float val1 =  1/sqrt( 2.0* M_PI* in_vvar);
+    float val2 = (in_vval-in_vmean)*(in_vval-in_vmean)/(2.0*in_vvar);
+    val2 = 1 / exp( val2);
+    result = log10( val1*val2);
+    if( isnan(result) || isinf(result) ) return 0.0;
+    return result;
+}
+    __global__
+void assignClassUsingMeanVarianceDataKernel(
+        float *in_trainedMatrix,
+        float *in_testMatrix,
+        int in_numgropus,
+        int in_numopcode,
+        int in_numtestfiles,
+        int *in_groupindexvector,
+        int *out_predictvector
+        )
+{
+    int tid = threadIdx.x + blockIdx.x * BLOCK_WIDTH;
+    int index_in_trainedMatrix = tid*4;
+    int im=0, iv=1;
+    float bprob=0.0, mprob=0.0;
+
+    __syncthreads();
+
+    for( int i=0; i<in_numopcode; i++)
+    {
+        float x, bvar, bmean, mvar, mmean;
+        x = in_testMatrix[ i*in_numtestfiles + tid ];
+        bmean = in_testMatrix[ i*in_numtestfiles + index_in_trainedMatrix+0+im ];
+        bvar  = in_testMatrix[ i*in_numtestfiles + index_in_trainedMatrix+0+iv ];
+        bprob += getTheProbablityD( x, bmean, bvar);
+
+        mmean = in_testMatrix[ i*in_numtestfiles + index_in_trainedMatrix+2+im ];
+        mvar  = in_testMatrix[ i*in_numtestfiles + index_in_trainedMatrix+2+iv ];
+        mprob += getTheProbablityD( x, mmean, mvar);
+
+    }
+    __syncthreads();
+
+    if( bprob > bprob ) 
+        out_predictvector[ tid ] = 0;
+    else
+        out_predictvector[ tid ] = 1;
+}
+
+void passignClassUsingMeanVarianceData( 
+        float *in_trainedMatrix,
+        float *in_testMatrix,
+        int in_numgropus,
+        int in_numopcode,
+        int in_numtestfiles,
+        int *in_groupindexvector,
+        int *out_predictvector
+        )
+{
+    /*
+TODO: try checking if we can get speed up by making trainedMatrix go to 
+constant memory
+     */
+    dim3 gridProp( ceil(in_numtestfiles/BLOCK_WIDTH)+1,1,1);
+    dim3 blockProp(BLOCK_WIDTH,1,1);
+    printf(" Running Kernel %d Threads.\n",BLOCK_WIDTH);
+    printf(" Running %.0lf Blocks.\n",ceil(in_numtestfiles/BLOCK_WIDTH));
+    err = cudaSuccess;
+    assignClassUsingMeanVarianceDataKernel<<<gridProp,blockProp>>>(
+            in_trainedMatrix,
+            in_testMatrix,
+            in_numgropus,
+            in_numopcode,
+            in_numtestfiles,
+            in_groupindexvector,
+            out_predictvector
+            );
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "%s, %d.\n %s.", __FILE__, __LINE__, cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
 }

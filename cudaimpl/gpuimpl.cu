@@ -4,6 +4,9 @@
 #include "trie.h"
 #include "gpu_naive.h"
 #include "naiveOperations.h"
+#define NUM_GROUPS 100
+#define NUM_FEATURES 900
+#define NUM_CLASSES 2 
 int main(int argc, char**argv)
 {
     if( argc < 4 )
@@ -22,73 +25,90 @@ int main(int argc, char**argv)
     int numfiles=0;
     s_trie *opcodelist = initTrie();
     s_files *filelist;
-    s_filelist *testlist, *trainlist;
+    s_group *grouplist;
 
     initFiles(&filelist);
-    initFileList(&testlist);
-    initFileList(&trainlist);
+    initGroups( &grouplist, NUM_GROUPS);
     numopcode = readOpcodeFile( opcode_file, &opcodelist);
     printf(" Found %d opcodes.\n", numopcode);
 
-    int *groupCount = createVector( 100);
-    numfiles  = readCSVFile( freq_csv1, numopcode, &filelist, groupCount, &trainlist, &testlist);
-    numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount, &trainlist, &testlist);
+    int *groupCount = createVector( NUM_GROUPS * NUM_CLASSES);
+    numfiles = readCSVFile( freq_csv1, numopcode, &filelist, groupCount);
+    numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount);
     printf(" Found %d files.\n", numfiles);
-    printf(" NUmber of testingFiles %d Number of traning files %d\n", testlist->count, trainlist->count);
 
-    int *testmat = createMatrix( testlist->count, numopcode);
-    int *rotated_testmat = createMatrix( testlist->count, numopcode);
-    int *trainmat = createMatrix( trainlist->count, numopcode);
-    int *rotated_trainmat = createMatrix( trainlist->count, numopcode);
-    //float*probmat = createFloatMatrix( trainlist->count, numopcode);
-    float *probmat = createFloatMatrix( 2, numopcode);
-    int *c_train_vect = createVector( trainlist->count);
-    float *cprob = (float*) calloc (sizeof(float) , 2);
-    int *c_test_vect = createVector( testlist->count);
-    //int *pridict= createVector( testlist->count);
-    int *pridict= createVector( trainlist->count);
+    numfiles = adjustCountInEachGroup( groupCount, NUM_GROUPS);
+    printf(" Found %d files.\n", numfiles);
 
-    //fillTheMatrix( &filelist, mat, p_cvect, numfiles, numopcode);
-    fillTheMatrixFromList( &trainlist, trainmat, c_train_vect, trainlist->count, numopcode);
-    fillTheMatrixFromList( &testlist, testmat,   c_test_vect, testlist->count, numopcode);
+    normalizeOpcodeFrequency( &filelist);
+    doGrouping( filelist, groupCount, &grouplist);
+    selectFeaturesForEachGroup( &grouplist, NUM_GROUPS, numopcode, NUM_FEATURES);
+    int numtestfiles=numfiles/3;
+    float *trainArray = createFloatMatrix( NUM_GROUPS*4, numopcode ); // MALWARE BENIGN MEAN VARIANCE  ... NUM_CLASSES * 2
+    float *testArray  = createFloatMatrix( numtestfiles, numopcode ); // MALWARE BENIGN MEAN VARIANCE  ... NUM_CLASSES * 2
+    int *class_vect = createVector( numtestfiles );
+    int *group_vect = createVector( numtestfiles );
+    int *predict_vect = createVector( numtestfiles );
+    int **featurelist = (int**) malloc(sizeof(int**)); 
 
-    float *d_probmat, *d_class_prob;
-    int *d_freqmat, *d_classvect, *d_classwise;
-    //int inrows, incolumns, outrows;
+    fillGroupWiseData( grouplist, trainArray, NUM_GROUPS, numopcode, testArray, class_vect, group_vect );
 
-    createDeviceMatrixI( &d_freqmat, trainlist->count, numopcode);
-    createDeviceMatrixF( &d_probmat, 2, numopcode);// there are only two classes malware, benign
-    createDeviceMatrixF( &d_class_prob, 2, 1);     // there are only two classes malware, benign
-    createDeviceMatrixI( &d_classwise, 2, 1);      // there are only two classes malware, benign
-    createDeviceMatrixI( &d_classvect, trainlist->count, 1); // there are only two classes malware, benign
-    
-    rotateMatrix( trainmat, rotated_trainmat, trainlist->count, numopcode);
-    transferToDeviceI( rotated_trainmat, d_freqmat,trainlist->count*numopcode);
-    transferToDeviceI( c_train_vect, d_classvect, trainlist->count);
+    selectFeaturesForEachGroup(
+            &grouplist,
+            NUM_GROUPS,
+            numopcode,
+            NUM_FEATURES
+            );
 
-    pnaiveTrain( d_freqmat, d_classvect, d_classwise, d_probmat, d_class_prob, numopcode, trainlist->count, 2);
-    float *H_probmat = createFloatMatrix( 2, numopcode);
-    int *d_testmat;
-    int *d_predictvect;
-    createDeviceMatrixI( &d_predictvect, testlist->count, 1);
-    createDeviceMatrixI( &d_testmat, testlist->count, numopcode);
-    rotateMatrix( testmat, rotated_testmat, testlist->count, numopcode);
-    //printIntMatrix( rotated_testmat, numopcode,testlist->count);
-    transferToDeviceI( rotated_testmat, d_testmat,testlist->count*numopcode);
+    assignFeatureListForEachGroup( 
+            &featurelist,
+            grouplist,
+            NUM_GROUPS
+            );
 
-    transferFromDeviceF( H_probmat, d_probmat, 2*numopcode);
-    //print( H_probmat, 2, numopcode);
+    //deleteGrouplist( &grouplist, NUM_GROUPS );
+    //deleteFilelist( &filelist );
+    //free( groupCount );
+    float *d_trainArray=NULL, *d_testArray; 
+    int *d_group_vect, *d_predict_vect, *H_predict_vect;
 
-    pnaiveTest( d_probmat, d_class_prob, d_testmat, 
-                testlist->count, numopcode, 2,
-                numopcode, d_predictvect);
-    
-    int *H_class_predict = createMatrix( testlist->count, 1);
-    transferFromDeviceI( H_class_predict, d_predictvect, testlist->count);
+    //createDeviceMatrixF( &d_trainArray, NUM_GROUPS, numopcode);
+    //createDeviceMatrixF( &d_trainArray, 10, 10);
+    //createDeviceMatrixF( &d_testArray, numtestfiles, numopcode);
 
-    //printIntMatrix( H_class_predict, testlist->count, 1);
-    //printIntMatrix( c_test_vect, testlist->count, 1);
-    printf(" Accuracy is %f\n",getAccuracy( H_class_predict, c_test_vect, testlist->count));
+    //createDeviceMatrixI( &d_group_vect, numtestfiles, 1);
+    //createDeviceMatrixI( &d_predict_vect, numtestfiles, 1);
 
-    return 0;
+    //transferToDeviceF( trainArray, d_trainArray, NUM_GROUPS*4* numopcode);  
+    //transferToDeviceF( testArray, d_testArray, NUM_GROUPS*4* numopcode);  
+
+    //transferToDeviceI( group_vect, d_group_vect, NUM_GROUPS*4* numopcode);  
+
+    //// TODO convert featurelist to matrix, currently it is pointer to pointers stuff
+
+    //passignClassUsingMeanVarianceData( d_trainArray, d_testArray, NUM_GROUPS, numopcode, numtestfiles, d_group_vect, d_predict_vect);
+    assignClassUsingMeanVarianceData( trainArray, testArray, NUM_GROUPS, numopcode, numtestfiles, group_vect, predict_vect);
+    ///* assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
+    //        testArray, featurelist, NUM_GROUPS, numopcode,
+    //        numtestfiles, group_vect, predict_vect
+    //        ); */
+    //////print( cprob, 2, 1);
+    //H_predict_vect = createVector( numtestfiles );
+    //transferFromDeviceI( H_predict_vect, d_predict_vect, numtestfiles);
+    printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, predict_vect, numtestfiles));
+    //printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, H_predict_vect, numtestfiles));
+
+    //deleteTrie( &opcodelist ); 
+    //free(testmat);
+    //free(trainmat);
+    //free(c_train_vect);
+    //free(c_test_vect );
+
+ free ( trainArray );
+ free ( testArray );
+ free ( class_vect );
+ free ( group_vect );
+ free ( predict_vect  );
+
+ return 0;
 }

@@ -11,4 +11,13 @@ void pnaiveTrain( int *inmat, int *inclass, int *class_wise, float *outmat, floa
 void pnaiveTest( float *in_probmat, float *in_class_prob, int*in_test_mat,
                  int in_test_mat_columns, int in_test_mat_rows, int in_probmat_rows, 
                  int in_probmat_columns, int *out_assigned_class);
+void passignClassUsingMeanVarianceData( 
+        float *in_trainedMatrix,
+        float *in_testMatrix,
+        int in_numgropus,
+        int in_numopcode,
+        int in_numtestfiles,
+        int *in_groupindexvector,
+        int *out_predictvector
+        );
 #endif//__gpunaive_H_
