@@ -5,7 +5,7 @@
 #include "gpu_naive.h"
 #include "naiveOperations.h"
 #define NUM_GROUPS 100
-#define NUM_FEATURES 900
+#define NUM_FEATURES 600
 #define NUM_CLASSES 2 
 int main(int argc, char**argv)
 {
@@ -45,10 +45,11 @@ int main(int argc, char**argv)
     selectFeaturesForEachGroup( &grouplist, NUM_GROUPS, numopcode, NUM_FEATURES);
     int numtestfiles=numfiles/3;
     float *trainArray = createFloatMatrix( NUM_GROUPS*4, numopcode ); // MALWARE BENIGN MEAN VARIANCE  ... NUM_CLASSES * 2
-    float *testArray  = createFloatMatrix( numtestfiles, numopcode ); // MALWARE BENIGN MEAN VARIANCE  ... NUM_CLASSES * 2
+    float *testArray  = createFloatMatrix( numtestfiles, numopcode );
     int *class_vect = createVector( numtestfiles );
     int *group_vect = createVector( numtestfiles );
     int *predict_vect = createVector( numtestfiles );
+
     int **featurelist = (int**) malloc(sizeof(int**)); 
     createFeatureListForEachGroup( &featurelist, NUM_GROUPS );
 
@@ -67,46 +68,45 @@ int main(int argc, char**argv)
             NUM_GROUPS
             );
 
-    //deleteGrouplist( &grouplist, NUM_GROUPS );
-    //deleteFilelist( &filelist );
-    //free( groupCount );
     float *d_trainArray=NULL, *d_testArray; 
     int *d_group_vect, *d_predict_vect, *H_predict_vect;
     float *rotated_test_matrix;
+    int *d_featureMatrix, *h_featureMatrix;
+
+    h_featureMatrix = createIntMatrix( NUM_GROUPS , numopcode );
+    spillFeatureMatrix( featurelist, h_featureMatrix, NUM_GROUPS, numopcode);
 
     rotated_test_matrix = createFloatMatrix( numtestfiles, numopcode);
     rotateMatrixF( testArray, rotated_test_matrix, numtestfiles, numopcode);
+
+    spillMatrixToFile( trainArray, NUM_GROUPS, numopcode,"/tmp/r_trainArry");
 
     createDeviceMatrixF( &d_trainArray, NUM_GROUPS*4, numopcode);
     createDeviceMatrixF( &d_testArray, numtestfiles, numopcode);
 
     createDeviceMatrixI( &d_group_vect, numtestfiles, 1);
     createDeviceMatrixI( &d_predict_vect, numtestfiles, 1);
+    createDeviceMatrixI( &d_featureMatrix, NUM_GROUPS, numopcode);
 
     transferToDeviceF( trainArray, d_trainArray, NUM_GROUPS*4* numopcode);  
     transferToDeviceF( rotated_test_matrix, d_testArray, numtestfiles* numopcode);  
 
     transferToDeviceI( group_vect, d_group_vect, numtestfiles );  
+    transferToDeviceI( h_featureMatrix, d_featureMatrix, NUM_GROUPS*numopcode);  
 
-    //// TODO convert featurelist to matrix, currently it is pointer to pointers stuff
 
     passignClassUsingMeanVarianceData( d_trainArray, d_testArray, NUM_GROUPS, numopcode, numtestfiles, d_group_vect, d_predict_vect);
-    //assignClassUsingMeanVarianceData( trainArray, testArray, NUM_GROUPS, numopcode, numtestfiles, group_vect, predict_vect);
-    ///* assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
-    //        testArray, featurelist, NUM_GROUPS, numopcode,
-    //        numtestfiles, group_vect, predict_vect
-    //        ); */
-    //////print( cprob, 2, 1);
+     assignClassUsingMeanVarianceData( trainArray, testArray, NUM_GROUPS, numopcode, numtestfiles, group_vect, predict_vect);
+    //passignClassUsingMeanVarianceDataUsingFeatureSelection( d_trainArray, d_testArray, d_featureMatrix,NUM_GROUPS, numopcode, numtestfiles, d_group_vect, d_predict_vect);
+    /*assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
+            testArray, featurelist, NUM_GROUPS, numopcode,
+            numtestfiles, group_vect, predict_vect
+            );*/
     H_predict_vect = createVector( numtestfiles );
     transferFromDeviceI( H_predict_vect, d_predict_vect, numtestfiles);
     printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, predict_vect, numtestfiles));
     printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, H_predict_vect, numtestfiles));
 
-    //deleteTrie( &opcodelist ); 
-    //free(testmat);
-    //free(trainmat);
-    //free(c_train_vect);
-    //free(c_test_vect );
 
     free ( trainArray );
     free ( testArray );

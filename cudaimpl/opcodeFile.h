@@ -125,4 +125,11 @@ void createFeatureListForEachGroup(
         int in_num_groups
         );
 void deleteGrouplist( s_group ** in_groups, int in_numgroups);
+void spillFeatureMatrix(
+    int **in_featureptr,
+    int *out_featurematrix,
+    int in_numgroups,
+    int in_numopcode
+    );
+void spillMatrixToFile( float *in_mat, int in_numrows, int in_numcolumns, char *filename);
 #endif//__OPCHEADER_H_

@@ -177,14 +177,14 @@ int readOpcodeFile(
         return -1;
     }
     char  *buff=NULL;
-    char  *opcode=NULL;
+    //char  *opcode=NULL;
     size_t count=0;
     size_t readlen=0;
     while( !feof( fp ) )
     {
         readlen = getline( &buff, &count, fp);
         if( readlen == (size_t)-1 ) break ;
-        opcode = strtok( buff, "\n" ); // TODO construct a opcode word list
+        //opcode = strtok( buff, "\n" ); // TODO construct a opcode word list
         numopcodes++;
     }
     fclose( fp );
@@ -596,8 +596,29 @@ void assignFeatureListForEachGroup(
     {
         if( in_groups[i].count > 0 )
             (*out_feature_list)[i] = in_groups[i].features;
+            else
+                (*out_feature_list)[i] = NULL;
     }
 }
+void spillFeatureMatrix(
+    int **in_featureptr,
+    int *out_featurematrix,
+    int in_numgroups,
+    int in_numopcode
+    )
+{
+    int i,j;
+    for( i=0; i<in_numgroups; i++)
+    {
+        for( j=0; j<in_numopcode; j++)
+        {
+            if( in_featureptr[i] )
+                out_featurematrix[ i*in_numopcode+j ] = in_featureptr[i][j];
+            else
+                out_featurematrix[ i*in_numopcode+j ] = 0;
+        }
+    }
+    }
 
 void showFiles( 
         s_files * p_files 
@@ -682,4 +703,21 @@ void showGroupWiseProcessedValues(
     }
 
     fclose(fp);
+}
+
+void spillMatrixToFile( float *in_mat, int in_numrows, int in_numcolumns, char *filename)
+{
+    FILE *fp ;
+    fp = fopen(filename, "w");
+
+    int i,j;
+    for ( i=0; i<in_numrows; i++)
+    {
+        for ( j=0; j<in_numcolumns; j++)
+        {
+            fprintf(fp,"%0.5f ",in_mat[ i*in_numcolumns + j ] );
+            }
+            fprintf(fp,"\n");
+    }
+    fclose( fp );
 }

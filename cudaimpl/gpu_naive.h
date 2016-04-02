@@ -20,4 +20,14 @@ void passignClassUsingMeanVarianceData(
         int *in_groupindexvector,
         int *out_predictvector
         );
+void passignClassUsingMeanVarianceDataUsingFeatureSelection( 
+        float *in_trainedMatrix, 
+        float *in_testMatrix, 
+        int *in_featureMatrix,
+        int in_numgroups, 
+        int in_numopcode, 
+        int in_numtestfiles, 
+        int *in_groupindexvector, 
+        int *out_predictvector
+        );
 #endif//__gpunaive_H_
