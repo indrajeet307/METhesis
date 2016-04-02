@@ -30,12 +30,14 @@ TODO:
         !!!! Refactoring !!!
 [ DONE ]1. Grouping                         
             Equal number of files in each group
+        1.a Remove Grouping Gracefully
 [ DONE ]2. Mean and Variance
 [ DONE ]3. Testing and Training
             1:3 ratio
 [ DONE ]4. Feature Selection
         6. Plot graphs for some configurations
-        7. Plot graphs for memory and timing stuff
+        7. Plot graphs for memory 
+        7.a timing stuff
 [ DONE ]8. Parallel Implementation of class prediction
 [ DONE ]9. Parallel Implementation of feature selection
 [ DONE ]10.Parallel Implementation for calculating mean and variance

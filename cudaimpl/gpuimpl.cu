@@ -37,13 +37,15 @@ int main(int argc, char**argv)
     numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount);
     printf(" Found %d files.\n", numfiles);
 
-    numfiles = adjustCountInEachGroup( groupCount, NUM_GROUPS);
+    //numfiles = adjustCountInEachGroup( groupCount, NUM_GROUPS);
     printf(" Found %d files.\n", numfiles);
 
     normalizeOpcodeFrequency( &filelist);
     doGrouping( filelist, groupCount, &grouplist);
     selectFeaturesForEachGroup( &grouplist, NUM_GROUPS, numopcode, NUM_FEATURES);
     int numtestfiles=numfiles/3;
+    printf(" Number of train files %d, Number of test files %d.\n", numfiles-numtestfiles,
+    numtestfiles);
     float *trainArray = createFloatMatrix( NUM_GROUPS*4, numopcode ); // MALWARE BENIGN MEAN VARIANCE  ... NUM_CLASSES * 2
     float *testArray  = createFloatMatrix( numtestfiles, numopcode );
     int *class_vect = createVector( numtestfiles );
@@ -96,7 +98,7 @@ int main(int argc, char**argv)
 
 
     passignClassUsingMeanVarianceData( d_trainArray, d_testArray, NUM_GROUPS, numopcode, numtestfiles, d_group_vect, d_predict_vect);
-     assignClassUsingMeanVarianceData( trainArray, testArray, NUM_GROUPS, numopcode, numtestfiles, group_vect, predict_vect);
+    assignClassUsingMeanVarianceData( trainArray, testArray, NUM_GROUPS, numopcode, numtestfiles, group_vect, predict_vect);
     //passignClassUsingMeanVarianceDataUsingFeatureSelection( d_trainArray, d_testArray, d_featureMatrix,NUM_GROUPS, numopcode, numtestfiles, d_group_vect, d_predict_vect);
     /*assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
             testArray, featurelist, NUM_GROUPS, numopcode,
