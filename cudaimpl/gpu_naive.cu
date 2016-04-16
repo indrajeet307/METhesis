@@ -3,6 +3,7 @@
 #include "gpu_naive.h"
 #define BLOCK_WIDTH 64
 cudaError_t err;
+cudaEvent_t starttimer, endtimer;
 void createDeviceMatrixF(float **mat, int rows, int columns)
 {
      err = cudaSuccess;
@@ -255,6 +256,7 @@ constant memory
      printf(" Running Kernel %d Threads.\n",BLOCK_WIDTH);
      printf(" Running %.0lf Blocks.\n",ceil(in_numtestfiles/BLOCK_WIDTH));
      err = cudaSuccess;
+     startCudaTimer();
      assignClassUsingMeanVarianceDataKernel<<<gridProp,blockProp>>>(
                in_trainedMatrix,
                in_testMatrix,
@@ -264,6 +266,8 @@ constant memory
                in_groupindexvector,
                out_predictvector
                );
+     endCudaTimer();
+     printf(" Time required for parallel is %f\n",getCudaTime());
      if (err != cudaSuccess)
      {
           fprintf(stderr, "%s, %d.\n %s.", __FILE__, __LINE__, cudaGetErrorString(err));
@@ -338,6 +342,7 @@ constant memory
      printf(" Running Kernel %d Threads.\n",BLOCK_WIDTH);
      printf(" Running %.0lf Blocks.\n",ceil(in_numtestfiles/BLOCK_WIDTH));
      err = cudaSuccess;
+     startCudaTimer();
      assignClassUsingMeanVarianceDataUsingFeatureSelectionKernel<<<gridProp,blockProp>>>(
                in_trainedMatrix,
                in_testMatrix,
@@ -348,10 +353,32 @@ constant memory
                in_groupindexvector,
                out_predictvector
                );
+     endCudaTimer();
+     printf(" Time required for parallel is %f\n",getCudaTime());
      if (err != cudaSuccess)
      {
           fprintf(stderr, "%s, %d.\n %s.", __FILE__, __LINE__, cudaGetErrorString(err));
           exit(EXIT_FAILURE);
      }
 
+}
+
+void startCudaTimer()
+{
+    cudaEventCreate(&starttimer);
+    cudaEventCreate(&endtimer);
+    cudaEventRecord(starttimer);
+
+}
+void endCudaTimer()
+{
+    cudaEventRecord(endtimer);
+}
+float getCudaTime()
+{
+    float time;
+    cudaEventSynchronize(endtimer);
+    cudaDeviceSynchronize();
+    cudaEventElapsedTime(&time, starttimer,endtimer);
+    return time;
 }

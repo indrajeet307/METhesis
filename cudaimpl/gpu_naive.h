@@ -30,4 +30,8 @@ void passignClassUsingMeanVarianceDataUsingFeatureSelection(
         int *in_groupindexvector, 
         int *out_predictvector
         );
+
+float getCudaTime();
+void startCudaTimer();
+void endCudaTimer();
 #endif//__gpunaive_H_
