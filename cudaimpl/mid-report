@@ -1,0 +1,82 @@
+---------------------------Steps Actually performed:
+1. Collect Malware and Benign files
+2. Run objdump on all the files, to extract opcodes
+3. Create a opcodelist, make sure it is unique and sorted
+4. Create a CSV
+|Filename|Filesize|Label|Class|number of opcode | opcode frequency |
+5. Read the CSV
+6. Separate files according to group
+7. Calculate set of Prominent Features/opcode
+8. Separate 2/3 files for training and 1/3 files for testing
+9. Convert both the training and testing sets into matrix
+10. Convert the Prominent Features/opcode into a vector, if the feature/opcode is
+prominent put 1 else put 0
+11. Configuration for Parallel Kernel
+    Spawn Threads = Number of files
+    Number of threads per block = 64
+    Number of blocks in kernel = Number of files / Number of threads per block
+ 11.a. In Creating probability matrix
+    Each thread adds to the mean and variance of each opcode found in that file
+ 11.b. Assigning Class
+    Each thread adds to the probability of current class the value of current opcode
+    In case of selective features, value of current value is multiplied by the value in
+    prominent vector.
+    Maximum probability class wins.
+12 We compare the timings of the Sequential and Parallel implementation
+
+---------------------------Observations
+Running  time on lab device
+|                                         | Number of features | Parallel  | Sequential |
+| Same number of files in each group      |                    |           |            |
+|                                         | 1808               | 7.207712  | 32.940000  |
+|                                         | 1808               | 7.209440  | 32.201000  |
+|                                         | 1808               | 7.203168  | 32.221000  |
+| Different number of files in each group |                    |           |            |
+|                                         | 1808               | 12.460224 | 161.717000 |
+|                                         | 1808               | 12.593920 | 161.887000 |
+|                                         | 1808               | 12.477952 | 162.161000 |
+| Varying number of features              |                    |           |            |
+|                                         | 200                | 7.282016  | 25.885000  |
+|                                         | 400                | 7.268832  | 29.219000  |
+|                                         | 600                | 7.268448  | 30.686000  |
+|                                         | 800                | 7.287168  | 31.621000  |
+|                                         | 1000               | 7.270464  | 32.102000  |
+|                                         | 1200               | 7.263104  | 32.443000  |
+|                                         | 1400               | 7.281888  | 32.781000  |
+|                                         | 1600               | 7.262784  | 32.782000  |
+|                                         | 2000               | 7.267136  | 32.947000  |
+
+Running time on my device
+|                                        | Number of features | Parallel  | Sequential |
+|Equal number of files in each group     |                    |           |            |
+|                                        | 1808               | 8.365664  | 74.106000  |
+|                                        | 1808               | 8.360384  | 35.865000  |
+|                                        | 1808               | 8.368256  | 35.816000  |
+|Different number of files in each group |                    |           |            |
+|                                        | 1808               | 23.732960 | 183.968000 |
+|                                        | 1808               | 23.734816 | 181.295000 |
+|                                        | 1808               | 23.746847 | 181.726000 |
+
+
+---------------------------Improve running time for parallel algorithm:
+1. We need to try Memory coalescing
+2. Reduce control divergence
+
+---------------------------List of TODOs:
+            !!!! Garbage Collection !!!
+[ PARTIAL ] !!!! Documentation !!!
+            !!!! Refactoring !!!
+[ DONE ]1. Grouping                         
+            Equal number of files in each group
+[ DONE ]1.a Remove Grouping Gracefully
+[ DONE ]2. Mean and Variance
+[ DONE ]3. Testing and Training
+            1:3 ratio
+[ DONE ]4. Feature Selection
+        6. Plot graphs for some configurations
+        7. Plot graphs for memory 
+[ PARTIAL ]7.a Timing stuff
+[ DONE ]8. Parallel Implementation of class prediction
+[ DONE ]9. Parallel Implementation of feature selection
+[ DONE ]10.Parallel Implementation for calculating mean and variance
+
