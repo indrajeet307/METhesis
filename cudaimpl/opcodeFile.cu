@@ -9,6 +9,7 @@
 
 // TODO update all enums with
 // http://stackoverflow.com/questions/1102542/how-to-define-an-enumerated-type-enum-in-c
+// TODO Garbage Collection
 enum classId{ BENIGN=0, MALWARE=1, UNKNOWN };
 int getClassId( 
         char * cls

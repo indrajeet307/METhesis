@@ -7,10 +7,10 @@
 #include "naiveOperations.h"
 #define NUM_GROUPS 100
 #ifndef NUM_FEATURES
-#define NUM_FEATURES 1808 
+#define NUM_FEATURES 808 
 #endif
 #ifndef EQUAL_NUM_FILES 
-#define EQUAL_NUM_FILES 1
+#define EQUAL_NUM_FILES 0
 #endif
 #define NUM_CLASSES 2 
 int main(int argc, char**argv)
