@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <sys/time.h>
 #include "opcodeFile.h"
 #include "trie.h"
@@ -18,9 +19,6 @@ int main(int argc, char**argv)
     if( argc < 4 )
     {
         printf("Usage:  ./main.out <opcode_file> <benign_freq_csv1> <malware_freq_csv2c>.\n");
-        printf("Use:  -DEQUALGROUPS to take equal number of benign and maliciousfiles \
-        while compiling\n");
-        printf("Use:  -DTESTING to take 2/3 samples for training and 1/3 samples for testing.\n"); 
         return 0;
     }
     char *opcode_file = argv[1];
@@ -45,13 +43,13 @@ int main(int argc, char**argv)
     numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount);
     //printf(" Found %d files.\n", numfiles);
 
-    //printf(" Found %d files.\n", numfiles);
+    printf(" Found %d files.\n", numfiles);
 
     normalizeOpcodeFrequency( &filelist);
     doGrouping( filelist, groupCount, &grouplist);
     selectFeaturesForEachGroup( &grouplist, NUM_GROUPS, numopcode, NUM_FEATURES);
-    int numtestfiles=numfiles/3;
-    //printf(" Number of train files %d, Number of test files %d.\n", numfiles-numtestfiles, numtestfiles);
+    int numtestfiles=numfiles/10;
+    printf(" Number of train files %d, Number of test files %d.\n", numfiles-numtestfiles, numtestfiles);
     float *trainArray = createFloatMatrix( NUM_GROUPS*4, numopcode ); // MALWARE BENIGN MEAN VARIANCE  ... NUM_CLASSES * 2
     float *testArray  = createFloatMatrix( numtestfiles, numopcode );
     int *class_vect = createVector( numtestfiles );
@@ -107,15 +105,15 @@ int main(int argc, char**argv)
                 );
         gettimeofday(&end_seq, NULL );
         timersub(&end_seq,&start_seq,&diff_seq);
-        printf(" %5.5f\n", diff_seq.tv_sec*1000.0+ diff_seq.tv_usec/1000.0);
+        printf(" %5.5f\t", diff_seq.tv_sec*1000.0+ diff_seq.tv_usec/1000.0);
 
     H_predict_vect = createVector( numtestfiles );
     transferFromDeviceI( H_predict_vect, d_predict_vect, numtestfiles);
-    //printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, predict_vect, numtestfiles));
+    printf(" %1.3f\n", getAccuracy(class_vect, predict_vect, numtestfiles));
     //printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, H_predict_vect, numtestfiles));
 
 
-    free ( trainArray );
+   free ( trainArray );
     free ( testArray );
     free ( class_vect );
     free ( group_vect );

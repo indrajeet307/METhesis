@@ -444,8 +444,7 @@ int fillGroupWiseData(
             {
                 while( file != NULL )
                 {
-                    fcount++;
-                    if ( fcount%3 != 0)
+                    if ( fcount != 9 )
                     {
                         for ( k=0; k< file->prop->numopcode; k++)
                         {
@@ -461,9 +460,9 @@ int fillGroupWiseData(
                             out_trainArray[((row+cls+var )*in_num_opcodes)+opcindex] += v;
                         }
                     }
-                    else // fcount%3 == 0
+                    else // fcount%9 == 0
                     {
-                        fcount = 0;
+                        fcount = -1;
                         for ( k=0; k< file->prop->numopcode; k++)
                         {
                             opcindex = file->prop->opcodes[k].id;
@@ -475,6 +474,7 @@ int fillGroupWiseData(
                         numtestfiles++;
                     }
                     file = file->next;
+                    fcount++;
                 }
             }
         }
