@@ -7,7 +7,7 @@
 #include "naiveOperations.h"
 #define NUM_GROUPS 100
 #ifndef NUM_FEATURES
-#define NUM_FEATURES 808 
+#define NUM_FEATURES 20
 #endif
 #ifndef EQUAL_NUM_FILES 
 #define EQUAL_NUM_FILES 0
@@ -38,29 +38,20 @@ int main(int argc, char**argv)
     initFiles(&filelist);
     initGroups( &grouplist, NUM_GROUPS);
     numopcode = readOpcodeFile( opcode_file, &opcodelist);
-    printf(" Found %d opcodes.\n", numopcode);
+    //printf(" Found %d opcodes.\n", numopcode);
 
     int *groupCount = createVector( NUM_GROUPS * NUM_CLASSES);
     numfiles = readCSVFile( freq_csv1, numopcode, &filelist, groupCount);
     numfiles += readCSVFile( freq_csv2, numopcode, &filelist, groupCount);
-    printf(" Found %d files.\n", numfiles);
+    //printf(" Found %d files.\n", numfiles);
 
-    if( EQUAL_NUM_FILES )
-    {
-        printf("Same number of files\n");
-        numfiles = adjustCountInEachGroup( groupCount, NUM_GROUPS);
-    }
-    else
-    {
-        printf("Diff number of files\n");
-    }
     //printf(" Found %d files.\n", numfiles);
 
     normalizeOpcodeFrequency( &filelist);
     doGrouping( filelist, groupCount, &grouplist);
     selectFeaturesForEachGroup( &grouplist, NUM_GROUPS, numopcode, NUM_FEATURES);
     int numtestfiles=numfiles/3;
-    printf(" Number of train files %d, Number of test files %d.\n", numfiles-numtestfiles, numtestfiles);
+    //printf(" Number of train files %d, Number of test files %d.\n", numfiles-numtestfiles, numtestfiles);
     float *trainArray = createFloatMatrix( NUM_GROUPS*4, numopcode ); // MALWARE BENIGN MEAN VARIANCE  ... NUM_CLASSES * 2
     float *testArray  = createFloatMatrix( numtestfiles, numopcode );
     int *class_vect = createVector( numtestfiles );
@@ -71,13 +62,6 @@ int main(int argc, char**argv)
     createFeatureListForEachGroup( &featurelist, NUM_GROUPS );
 
     fillGroupWiseData( grouplist, trainArray, NUM_GROUPS, numopcode, testArray, class_vect, group_vect );
-
-    selectFeaturesForEachGroup(
-            &grouplist,
-            NUM_GROUPS,
-            numopcode,
-            NUM_FEATURES
-            );
 
     assignFeatureListForEachGroup( 
             &featurelist,
@@ -90,44 +74,45 @@ int main(int argc, char**argv)
     float *rotated_test_matrix;
     int *d_featureMatrix, *h_featureMatrix;
 
-    h_featureMatrix = createIntMatrix( NUM_GROUPS , numopcode );
-    spillFeatureMatrix( featurelist, h_featureMatrix, NUM_GROUPS, numopcode);
+    h_featureMatrix = createIntMatrix( NUM_GROUPS , NUM_FEATURES);
+    spillFeatureMatrix( featurelist, h_featureMatrix, NUM_GROUPS, numopcode, NUM_FEATURES);
 
     rotated_test_matrix = createFloatMatrix( numtestfiles, numopcode);
     rotateMatrixF( testArray, rotated_test_matrix, numtestfiles, numopcode);
 
-    spillMatrixToFile( trainArray, NUM_GROUPS, numopcode,"/tmp/r_trainArry");
+    //spillMatrixToFile( trainArray, NUM_GROUPS, numopcode,"/tmp/r_trainArry");
 
     createDeviceMatrixF( &d_trainArray, NUM_GROUPS*4, numopcode);
     createDeviceMatrixF( &d_testArray, numtestfiles, numopcode);
 
     createDeviceMatrixI( &d_group_vect, numtestfiles, 1);
     createDeviceMatrixI( &d_predict_vect, numtestfiles, 1);
-    createDeviceMatrixI( &d_featureMatrix, NUM_GROUPS, numopcode);
+    createDeviceMatrixI( &d_featureMatrix, NUM_GROUPS, NUM_FEATURES);
 
     transferToDeviceF( trainArray, d_trainArray, NUM_GROUPS*4* numopcode);  
     transferToDeviceF( rotated_test_matrix, d_testArray, numtestfiles* numopcode);  
 
     transferToDeviceI( group_vect, d_group_vect, numtestfiles );  
-    transferToDeviceI( h_featureMatrix, d_featureMatrix, NUM_GROUPS*numopcode);  
+    transferToDeviceI( h_featureMatrix, d_featureMatrix, NUM_GROUPS*NUM_FEATURES);  
 
 
     
-        printf(" Features:%d\n", NUM_FEATURES);
-        passignClassUsingMeanVarianceDataUsingFeatureSelection( d_trainArray, d_testArray, d_featureMatrix,NUM_GROUPS, numopcode, numtestfiles, d_group_vect, d_predict_vect);
+        printf("%5d\t", NUM_FEATURES);
+        passignClassUsingMeanVarianceDataUsingFeatureSelection( d_trainArray, d_testArray,
+        d_featureMatrix,NUM_GROUPS, numopcode, NUM_FEATURES, numtestfiles, d_group_vect, d_predict_vect);
         gettimeofday(&start_seq, NULL );
         assignClassUsingMeanVarianceDataAndFeatureSelection( trainArray,
-                testArray, featurelist, NUM_GROUPS, numopcode,
+                testArray, h_featureMatrix, NUM_GROUPS, numopcode, NUM_FEATURES,
                 numtestfiles, group_vect, predict_vect
                 );
         gettimeofday(&end_seq, NULL );
         timersub(&end_seq,&start_seq,&diff_seq);
-        printf(" Time required for Seq is %f\n", diff_seq.tv_sec*1000.0+ diff_seq.tv_usec/1000.0);
+        printf(" %5.5f\n", diff_seq.tv_sec*1000.0+ diff_seq.tv_usec/1000.0);
 
     H_predict_vect = createVector( numtestfiles );
     transferFromDeviceI( H_predict_vect, d_predict_vect, numtestfiles);
-    printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, predict_vect, numtestfiles));
-    printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, H_predict_vect, numtestfiles));
+    //printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, predict_vect, numtestfiles));
+    //printf(" Acuraccy is %f LOL :) :) :D :D\n", getAccuracy(class_vect, H_predict_vect, numtestfiles));
 
 
     free ( trainArray );

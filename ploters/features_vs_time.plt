@@ -15,6 +15,7 @@ set term jpeg size 1080,640 fontscale
 set output "features_vs_time_taken.jpeg"
 set grid
 set title "Number of Features Vs Time Taken"
-set xlabel "Number of Features"
-set ylabel "Time"
-plot "lab_device_res" using 1:2 title "Parallel" with lines, "lab_device_res" using 1:3 title "Sequential" with lines, "res" using 1:2 title "my_device_parallel" with lines, "res" using 1:3 title "my_device_seq" with lines
+set xlabel "Number of Features(opcodes)"
+set ylabel "Time(milisecs)"
+plot "lab_device_res" using 1:2 title "Parallel" with lines, "lab_device_res" using 1:3 title "Sequential" with lines, "res" using 1:2 title "my_device_parallel" with lines, "res" using 1:3 title "my_device_seq" with lines , "before_modified_features" using 1:2 title "Parallel_before_feature" with lines, "before_modified_features" using 1:3 title "Seq_before_feature" with lines
+# join above two lines to get the previous results

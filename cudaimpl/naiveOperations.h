@@ -94,9 +94,10 @@ void assignClassUsingMeanVarianceData(
 void assignClassUsingMeanVarianceDataAndFeatureSelection(
         float *in_trainMatrix,  /*!< [in] trained probability matrix */
         float *in_testMatrix,   /*!< [in] testing matrix */
-        int **in_feature_list,  /*!< [in] array of list of feature vector for each group, number of lists = number of groups */
+        int *in_feature_list,  /*!< [in] array of list of feature vector for each group, number of lists = number of groups */
         int in_num_groups,      /*!< [in] number of groups / number of rows in train matrix */
         int in_num_opcodes,     /*!< [in] number of opcodes / number of columns in test,train matrix */
+        int in_num_features,     /*!< [in] number of prominent features */
         int in_numtestfiles,    /*!< [in] number of test files / number of rows in test matrix */
         int *in_group_index,    /*!< [in] vector containing group index of each file in test matrix( 1:1 mapping) */
         int *out_predict_vect   /*!< [out] predicted class  */

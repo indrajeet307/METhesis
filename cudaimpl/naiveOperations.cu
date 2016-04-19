@@ -563,9 +563,10 @@ void assignClassUsingMeanVarianceData(
 void assignClassUsingMeanVarianceDataAndFeatureSelection(
         float *in_trainMatrix,  /*!< [in] trained probability matrix */
         float *in_testMatrix,   /*!< [in] testing matrix */
-        int **in_feature_list,  /*!< [in] array of list of feature vector for each group, number of lists = number of groups */
+        int *in_feature_list,  /*!< [in] array of list of feature vector for each group, number of lists = number of groups */
         int in_num_groups,      /*!< [in] number of groups / number of rows in train matrix */
         int in_num_opcodes,     /*!< [in] number of opcodes / number of columns in test,train matrix */
+        int in_num_features,     /*!< [in] number of prominent features */
         int in_numtestfiles,    /*!< [in] number of test files / number of rows in test matrix */
         int *in_group_index,    /*!< [in] vector containing group index of each file in test matrix( 1:1 mapping) */
         int *out_predict_vect   /*!< [out] predicted class  */
@@ -585,26 +586,27 @@ void assignClassUsingMeanVarianceDataAndFeatureSelection(
         pmal=0.0; 
         pben=0.0;
         // for each opcode
-        for ( j=0; j<in_num_opcodes; j++)
+        for ( j=0; j<in_num_features; j++)
         {
+            int opcindex = in_feature_list[grpindex*in_num_features+j];
             // if the normalized frequency in in_testMatrix is greater than 0 and current
             // opcode is amongst the prominent opcode for the group,to which the current
             // file belongs.
-            if( in_testMatrix[i*in_num_opcodes+j] > 0 && in_feature_list[grpindex][j] ) 
+            if( in_testMatrix[i*in_num_opcodes+opcindex] > 0 ) 
             {
                 // get variance and mean assuming it is a benign file
-                vmean = in_trainMatrix[(index+0+mean)*in_num_opcodes+j];
-                vvar  = in_trainMatrix[(index+0+var )*in_num_opcodes+j];
+                vmean = in_trainMatrix[(index+0+mean)*in_num_opcodes+opcindex];
+                vvar  = in_trainMatrix[(index+0+var )*in_num_opcodes+opcindex];
                 assert( vmean >= 0.0f && vvar >= 0.0f );
                 // add to probability of file being benign
-                pben += getTheProbablity( in_testMatrix[i*in_num_opcodes+j], vmean, vvar);
+                pben += getTheProbablity( in_testMatrix[i*in_num_opcodes+opcindex], vmean, vvar);
 
                 // get variance and mean assuming it is a malware file
-                vmean = in_trainMatrix[(index+2+mean)*in_num_opcodes+j];
-                vvar  = in_trainMatrix[(index+2+var )*in_num_opcodes+j];
+                vmean = in_trainMatrix[(index+2+mean)*in_num_opcodes+opcindex];
+                vvar  = in_trainMatrix[(index+2+var )*in_num_opcodes+opcindex];
                 assert( vmean >= 0.0f && vvar >= 0.0f );
                 // add to probability of file being malware
-                pmal += getTheProbablity( in_testMatrix[i*in_num_opcodes+j], vmean, vvar);
+                pmal += getTheProbablity( in_testMatrix[i*in_num_opcodes+opcindex], vmean, vvar);
             }
         }
         /// assign class whos probablity is greater

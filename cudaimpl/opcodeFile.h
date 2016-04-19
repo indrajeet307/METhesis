@@ -129,7 +129,8 @@ void spillFeatureMatrix(
     int **in_featureptr,
     int *out_featurematrix,
     int in_numgroups,
-    int in_numopcode
+    int in_numopcode,
+    int in_numfeatures
     );
 void spillMatrixToFile( float *in_mat, int in_numrows, int in_numcolumns, char *filename);
 #endif//__OPCHEADER_H_

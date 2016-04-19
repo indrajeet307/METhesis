@@ -541,6 +541,7 @@ void assignClassUsingMeanVarianceDataUsingFeatureSelectionKernel(
         int *in_featureMatrix,       /*!< [in] feature vector, for each group*/
         int in_numgroups,    /*!< [in] number of groups */
         int in_numopcode,    /*!< [in] number of opcodes */
+        int in_numfeatures,    /*!< [in] number of feature*/
         int in_numtestfiles,    /*!< [in] number of test files */
         int *in_groupindexvector,    /*!< [in] vector containing group index of test files
         based on its size*/
@@ -557,27 +558,27 @@ void assignClassUsingMeanVarianceDataUsingFeatureSelectionKernel(
     if( tid < in_numtestfiles)
     {
     // for each opcode
-    for( int i=0; i<in_numopcode; i++)
+    for( int i=0; i<in_numfeatures; i++)
     {
-        int feature;
+        int featureindex;
         float x;
-        x = in_testMatrix[ i*in_numtestfiles + tid ];
-        feature = in_featureMatrix[ group_index*in_numopcode+ i];
+        featureindex = in_featureMatrix[ group_index*in_numfeatures+ i];
+        x = in_testMatrix[ featureindex*in_numtestfiles + tid ];
         // if opcode present in test file
         if( x > 0) 
         {
             float bvar=0, bmean=0, mvar=0, mmean=0;
-            bmean = in_trainedMatrix[ (0+im+index_in_trainedMatrix)*in_numopcode + i];
-            bvar  = in_trainedMatrix[ (0+iv+index_in_trainedMatrix)*in_numopcode + i];
+            bmean = in_trainedMatrix[ (0+im+index_in_trainedMatrix)*in_numopcode + featureindex];
+            bvar  = in_trainedMatrix[ (0+iv+index_in_trainedMatrix)*in_numopcode + featureindex];
             // get the probability of file being benign
-            bprob += getTheProbablityD( x, bmean, bvar)*feature;
+            bprob += getTheProbablityD( x, bmean, bvar);
             // multiplied with feature(0/1), will account only if the feature is amongst
             // the selected feature
 
-            mmean = in_trainedMatrix[ (2+im+index_in_trainedMatrix)*in_numopcode+ i];
-            mvar  = in_trainedMatrix[ (2+iv+index_in_trainedMatrix)*in_numopcode+ i];
+            mmean = in_trainedMatrix[ (2+im+index_in_trainedMatrix)*in_numopcode+ featureindex];
+            mvar  = in_trainedMatrix[ (2+iv+index_in_trainedMatrix)*in_numopcode+ featureindex];
             // get the probability of file being malware 
-            mprob += getTheProbablityD( x, mmean, mvar)*feature;
+            mprob += getTheProbablityD( x, mmean, mvar);
         }
     }
     __syncthreads();
@@ -605,6 +606,7 @@ void passignClassUsingMeanVarianceDataUsingFeatureSelection(
         int *in_featureMatrix,       /*!< [in] feature vector */
         int in_numgroups,    /*!< [in] number of groups */
         int in_numopcode,    /*!< [in] number of opcodes */
+        int in_numfeatures,    /*!< [in] number of features*/
         int in_numtestfiles,    /*!< [in] number of test files */
         int *in_groupindexvector,    /*!< [in] vector containing group index of test files
         based on its size*/
@@ -617,8 +619,8 @@ constant memory
      */
     dim3 gridProp( ceil(in_numtestfiles/BLOCK_WIDTH)+1,1,1);
     dim3 blockProp(BLOCK_WIDTH,1,1);
-    printf(" Running Kernel %d Threads.\n",BLOCK_WIDTH);
-    printf(" Running %.0lf Blocks.\n",ceil(in_numtestfiles/BLOCK_WIDTH));
+    //printf(" Running Kernel %d Threads.\n",BLOCK_WIDTH);
+    //printf(" Running %.0lf Blocks.\n",ceil(in_numtestfiles/BLOCK_WIDTH));
     err = cudaSuccess;
     startCudaTimer();
     assignClassUsingMeanVarianceDataUsingFeatureSelectionKernel<<<gridProp,blockProp>>>(
@@ -627,6 +629,7 @@ constant memory
             in_featureMatrix,
             in_numgroups,
             in_numopcode,
+            in_numfeatures,
             in_numtestfiles,
             in_groupindexvector,
             out_predictvector
@@ -637,7 +640,7 @@ constant memory
         exit(EXIT_FAILURE);
     }
     endCudaTimer();
-    printf(" Time required for parallel is %f\n",getCudaTime());
+    printf(" %5.5f\t",getCudaTime());
 }
 
 void startCudaTimer()

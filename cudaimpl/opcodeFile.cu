@@ -605,21 +605,36 @@ void spillFeatureMatrix(
     int **in_featureptr,
     int *out_featurematrix,
     int in_numgroups,
-    int in_numopcode
+    int in_numopcode,
+    int in_numfeatures
     )
 {
-    int i,j;
+    int i,j,k;
     for( i=0; i<in_numgroups; i++)
     {
-        for( j=0; j<in_numopcode; j++)
+        if( in_featureptr[i] )
         {
-            if( in_featureptr[i] )
-                out_featurematrix[ i*in_numopcode+j ] = in_featureptr[i][j];
-            else
-                out_featurematrix[ i*in_numopcode+j ] = 0;
+            k=0;
+            for( j=0; j<in_numopcode; j++)
+            {
+                if(in_featureptr[i][j])
+                {
+                    out_featurematrix[ i*in_numfeatures+(k++) ] = j;
+                    //printf("%d ", j);
+                }
+            }
+            //printf("\n");
+        }
+        else
+        {
+            for( j=0; j<in_numfeatures; j++)
+            {
+                out_featurematrix[ i*in_numfeatures+(k++) ] = 0;
+            }
+
         }
     }
-    }
+}
 
 void showFiles( 
         s_files * p_files 

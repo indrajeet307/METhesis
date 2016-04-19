@@ -23,6 +23,12 @@ Approach 1: [ DONE ]
     each thread for each class calculates the summation of probability for each opcode
     assigns class with the maximum probability
     Drawbacks: Has many nested for loops, huge control divergence
+[ DONE ] FEATURE SELECTION
+Approach 1: [ DONE ]
+    USE A BIT VECTOR FOR UNIFORM ACCESS PATTERN
+    Drawbacks: Takes more time ... Replaced with traditional logic(Approach 0)
+Approach 0: [ DONE ] overlooked resuggested by Aashu
+    USE indices of prominent vectors to locates the features
 
 TODO:
             !!!! Garbage Collection !!!
@@ -37,7 +43,8 @@ TODO:
 [ DONE ]4. Feature Selection
         6. Plot graphs for some configurations
         7. Plot graphs for memory 
-[ PARTIAL ]7.a Timing stuff
+[ DONE ]7.a Timing stuff
 [ DONE ]8. Parallel Implementation of class prediction
 [ DONE ]9. Parallel Implementation of feature selection
 [ DONE ]10.Parallel Implementation for calculating mean and variance
+[ PARTIAL ]11. Verify each stage of the process
